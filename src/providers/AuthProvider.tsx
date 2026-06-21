@@ -5,8 +5,10 @@ import { isSupabaseConfigured, supabase } from '../lib/supabase'
 interface AuthContextValue {
   session: Session | null
   loading: boolean
-  /** Sends a magic-link sign-in email. */
-  signInWithEmail: (email: string) => Promise<{ error: string | null }>
+  /** Emails a 6-digit sign-in code (immune to link-prefetch scanners). */
+  sendCode: (email: string) => Promise<{ error: string | null }>
+  /** Verifies the 6-digit code and establishes the session in-app (no redirect). */
+  verifyCode: (email: string, code: string) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
 }
 
@@ -33,11 +35,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       session,
       loading,
-      signInWithEmail: async (email: string) => {
+      sendCode: async (email: string) => {
         if (!supabase) return { error: 'Supabase is not configured.' }
+        // No emailRedirectTo: this is a code flow, there is no link to click.
         const { error } = await supabase.auth.signInWithOtp({
           email,
-          options: { emailRedirectTo: window.location.origin },
+          options: { shouldCreateUser: true },
+        })
+        return { error: error?.message ?? null }
+      },
+      verifyCode: async (email: string, code: string) => {
+        if (!supabase) return { error: 'Supabase is not configured.' }
+        const { error } = await supabase.auth.verifyOtp({
+          email,
+          token: code,
+          type: 'email',
         })
         return { error: error?.message ?? null }
       },
