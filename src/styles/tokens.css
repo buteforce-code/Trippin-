@@ -1,0 +1,64 @@
+/*
+ * Design tokens — lifted verbatim from the prototype's THEMES map.
+ * Theme is applied via [data-theme="…"] on the mobile frame element.
+ * Shared (non-theme) constants live in :root.
+ */
+:root {
+  --ink: #0b3d3a;
+  --muted: #5c8a85;
+  --green: #2bb673;
+
+  /* category colors */
+  --cat-stay: #12c2c2;
+  --cat-food: #ff7a66;
+  --cat-travel: #ffce3a;
+  --cat-activities: #2bb673;
+  --cat-misc: #9b8cff;
+
+  /* surfaces */
+  --card-shadow: 0 6px 18px rgba(11, 77, 74, 0.07);
+  --radius-sm: 14px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --radius-xl: 28px;
+
+  /* motion */
+  --dur-fast: 150ms;
+  --dur-normal: 250ms;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --frame-max: 430px;
+}
+
+/* Lagoon (default) */
+[data-theme='lagoon'] {
+  --primary: #12c2c2;
+  --primary-d: #0ba5a5;
+  --accent: #ff7a66;
+  --sun: #ffce3a;
+  --bg: #effaf6;
+  --tint: #ddf5ef;
+  --shadow: rgba(15, 180, 170, 0.4);
+}
+
+/* Sunset */
+[data-theme='sunset'] {
+  --primary: #ff8a5b;
+  --primary-d: #f2683c;
+  --accent: #ff4d8d;
+  --sun: #ffc247;
+  --bg: #fff4ec;
+  --tint: #ffe3d4;
+  --shadow: rgba(255, 120, 80, 0.4);
+}
+
+/* Palm */
+[data-theme='palm'] {
+  --primary: #16a571;
+  --primary-d: #0e8a5e;
+  --accent: #ff9f45;
+  --sun: #ffd23f;
+  --bg: #f0faf1;
+  --tint: #d8f2de;
+  --shadow: rgba(22, 165, 113, 0.38);
+}

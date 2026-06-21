@@ -1,0 +1,47 @@
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #d8efe9;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  color: var(--ink);
+}
+
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+button {
+  font-family: inherit;
+}
+
+input {
+  font-family: inherit;
+}
+
+/* App background: the radial wash behind the phone frame. */
+.app-bg {
+  min-height: 100dvh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  background: radial-gradient(120% 70% at 50% 0%, #eafaf4 0%, #cfe9e9 55%, #bfe0df 100%);
+}
+
+/* Press feedback used across tappable elements (replaces prototype's style-active). */
+.pressable {
+  transition: transform var(--dur-fast);
+}
+.pressable:active {
+  transform: scale(0.94);
+}

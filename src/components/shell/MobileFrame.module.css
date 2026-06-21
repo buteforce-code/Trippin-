@@ -1,0 +1,75 @@
+.frame {
+  width: min(100%, var(--frame-max));
+  height: 100dvh;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg);
+  box-shadow: 0 30px 80px rgba(10, 70, 70, 0.28);
+  display: flex;
+  flex-direction: column;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  color: var(--ink);
+}
+
+.ambient {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+.blob {
+  position: absolute;
+  border-radius: 50%;
+}
+.blobSun {
+  top: -70px;
+  right: -60px;
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(circle, var(--sun), transparent 70%);
+  opacity: 0.16;
+}
+.blobPrimary {
+  bottom: 150px;
+  left: -80px;
+  width: 240px;
+  height: 240px;
+  background: radial-gradient(circle, var(--primary), transparent 70%);
+  opacity: 0.12;
+}
+.blobAccent {
+  bottom: -50px;
+  right: -40px;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, var(--accent), transparent 70%);
+  opacity: 0.12;
+}
+
+.statusBar {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 22px 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  flex: none;
+}
+.statusIcons {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.scroll {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 6px 18px 104px;
+}

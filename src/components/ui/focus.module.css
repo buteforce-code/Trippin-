@@ -1,0 +1,30 @@
+/*
+ * Shared keyboard focus indicator (WCAG 2.2 — 2.4.7 Focus Visible,
+ * 2.4.11 Focus Appearance). Inline styles cannot express :focus-visible,
+ * so interactive controls opt in with this class. Mouse/touch users are
+ * unaffected; only keyboard focus shows the ring.
+ */
+.ring {
+  outline: none;
+}
+.ring:focus-visible {
+  outline: 2px solid var(--primary-d);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* For controls sitting on photos / dark gradients, a light ring stays visible. */
+.ringOnDark:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.35);
+}
+
+/*
+ * For controls that already use `outline` as a selected-state indicator
+ * (e.g. theme swatches). Use box-shadow so the focus ring does not collide
+ * with the inline selection outline.
+ */
+.ringShadow:focus-visible {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--ink);
+}
