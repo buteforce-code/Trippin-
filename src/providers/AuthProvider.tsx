@@ -14,6 +14,19 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
+/** Turn opaque/empty Supabase auth errors into something a user can read. */
+function readableAuthError(message?: string | null): string | null {
+  if (!message) return null
+  const m = message.trim()
+  if (!m || m === '{}' || m === '[object Object]') {
+    return "Couldn't send the code right now. Please try again in a moment."
+  }
+  if (/error sending/i.test(m)) {
+    return "We couldn't email your code (mail service issue). Please try again shortly."
+  }
+  return m
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(isSupabaseConfigured)
@@ -42,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email,
           options: { shouldCreateUser: true },
         })
-        return { error: error?.message ?? null }
+        return { error: readableAuthError(error?.message) }
       },
       verifyCode: async (email: string, code: string) => {
         if (!supabase) return { error: 'Supabase is not configured.' }
@@ -51,7 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           token: code,
           type: 'email',
         })
-        return { error: error?.message ?? null }
+        return { error: readableAuthError(error?.message) }
       },
       signOut: async () => {
         await supabase?.auth.signOut()
