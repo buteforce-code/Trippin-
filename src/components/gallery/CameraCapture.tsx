@@ -15,6 +15,7 @@ type FacingMode = 'environment' | 'user'
 type Status =
   | 'starting' // requesting the live stream
   | 'live' // preview running, ready to shoot
+  | 'review' // a frame was captured — preview it before posting
   | 'posting' // uploading the captured frame
   | 'posted' // brief "Posted!" confirmation
   | 'denied' // permission refused — offer native fallback
@@ -22,15 +23,26 @@ type Status =
 
 const JPEG_QUALITY = 0.92
 const POSTED_HOLD_MS = 1100
+/** Shutter sits above the home indicator; never let the safe-area collapse it fully. */
+const SHUTTER_BOTTOM = 'calc(env(safe-area-inset-bottom, 0px) + 28px)'
+const TOP_INSET = 'calc(env(safe-area-inset-top, 0px) + 14px)'
+
+/** A captured still plus its object URL, kept together so we can revoke cleanly. */
+interface Shot {
+  file: File
+  url: string
+}
 
 /**
- * Full-screen in-app camera ("Instants"). Fills the mobile frame, shows a live
- * back-camera preview, and posts a still straight into the shared gallery.
+ * Full-screen in-app camera ("Instants"). Renders as a fixed overlay above the
+ * bottom nav, shows a live preview filling the screen, and posts a still
+ * straight into the shared gallery — with a Retake / Post review step in between
+ * so nothing is uploaded by accident.
  *
  * Falls back to the OS camera via a hidden `<input capture>` when getUserMedia
  * is unavailable or the user denies permission, so phones still work. All
  * MediaStream tracks are stopped on unmount/close so the camera light never
- * leaks.
+ * leaks, and the captured object URL is revoked to avoid leaking blob memory.
  */
 export function CameraCapture({ onClose, stopKey }: CameraCaptureProps) {
   const uploadMedia = useUploadMedia()
@@ -38,6 +50,7 @@ export function CameraCapture({ onClose, stopKey }: CameraCaptureProps) {
   const streamRef = useRef<MediaStream | null>(null)
   const fallbackInputRef = useRef<HTMLInputElement>(null)
   const [facing, setFacing] = useState<FacingMode>('environment')
+  const [shot, setShot] = useState<Shot | null>(null)
   const supportsGetUserMedia =
     typeof navigator !== 'undefined' && Boolean(navigator.mediaDevices?.getUserMedia)
   const [status, setStatus] = useState<Status>(supportsGetUserMedia ? 'starting' : 'unsupported')
@@ -52,7 +65,8 @@ export function CameraCapture({ onClose, stopKey }: CameraCaptureProps) {
     if (videoRef.current) videoRef.current.srcObject = null
   }, [])
 
-  // (Re)acquire the stream whenever the facing mode changes while live.
+  // (Re)acquire the stream whenever the facing mode changes while live. We skip
+  // re-acquiring while reviewing/posting so flipping is a no-op there.
   useEffect(() => {
     // `status` already initialises to 'unsupported' when getUserMedia is absent.
     if (!supportsGetUserMedia) return
@@ -93,6 +107,12 @@ export function CameraCapture({ onClose, stopKey }: CameraCaptureProps) {
   // Hard stop on unmount — covers close, navigation, and tab teardown.
   useEffect(() => stopStream, [stopStream])
 
+  // Revoke the captured object URL when it changes or on unmount.
+  useEffect(() => {
+    if (!shot) return
+    return () => URL.revokeObjectURL(shot.url)
+  }, [shot])
+
   const handleClose = useCallback(() => {
     stopStream()
     onClose()
@@ -103,29 +123,7 @@ export function CameraCapture({ onClose, stopKey }: CameraCaptureProps) {
     setFacing((prev) => (prev === 'environment' ? 'user' : 'environment'))
   }, [])
 
-  /** Wrap a blob as a File and push it into the shared gallery bucket. */
-  const postFile = useCallback(
-    async (file: File) => {
-      setStatus('posting')
-      try {
-        await uploadMedia.mutateAsync({ files: [file], stopKey })
-        setStatus('posted')
-      } catch {
-        // Re-arm so the user can retry; the stream is still live.
-        setStatus('live')
-      }
-    },
-    [stopKey, uploadMedia],
-  )
-
-  // After a successful post, hold the confirmation briefly, then close.
-  useEffect(() => {
-    if (status !== 'posted') return
-    const id = window.setTimeout(handleClose, POSTED_HOLD_MS)
-    return () => window.clearTimeout(id)
-  }, [status, handleClose])
-
-  /** Draw the current video frame to a canvas and export a JPEG File. */
+  /** Draw the current video frame to a canvas, hold it for review. */
   const shoot = useCallback(() => {
     const video = videoRef.current
     if (!video || status !== 'live') return
@@ -149,20 +147,58 @@ export function CameraCapture({ onClose, stopKey }: CameraCaptureProps) {
       (blob) => {
         if (!blob) return
         const file = new File([blob], `instant-${Date.now()}.jpg`, { type: 'image/jpeg' })
-        void postFile(file)
+        setShot({ file, url: URL.createObjectURL(file) })
+        setStatus('review')
       },
       'image/jpeg',
       JPEG_QUALITY,
     )
-  }, [facing, status, postFile])
+  }, [facing, status])
+
+  /** Discard the captured frame and return to the live preview. */
+  const retake = useCallback(() => {
+    setShot(null)
+    setStatus('live')
+  }, [])
+
+  /** Push the reviewed shot into the shared gallery bucket, then close. */
+  const post = useCallback(async () => {
+    if (!shot) return
+    setStatus('posting')
+    try {
+      await uploadMedia.mutateAsync({ files: [shot.file], stopKey })
+      setStatus('posted')
+    } catch {
+      // Re-arm review so the user can retry or retake.
+      setStatus('review')
+    }
+  }, [shot, stopKey, uploadMedia])
+
+  // After a successful post, hold the confirmation briefly, then close.
+  useEffect(() => {
+    if (status !== 'posted') return
+    const id = window.setTimeout(handleClose, POSTED_HOLD_MS)
+    return () => window.clearTimeout(id)
+  }, [status, handleClose])
 
   /** Native OS-camera fallback (denied / unsupported paths). */
-  const onFallbackFile = (fileList: FileList | null) => {
-    const file = fileList?.[0]
-    if (file) void postFile(file)
-  }
+  const onFallbackFile = useCallback(
+    async (fileList: FileList | null) => {
+      const file = fileList?.[0]
+      if (!file) return
+      setStatus('posting')
+      try {
+        await uploadMedia.mutateAsync({ files: [file], stopKey })
+        setStatus('posted')
+      } catch {
+        setStatus('denied')
+      }
+    },
+    [stopKey, uploadMedia],
+  )
 
   const isLive = status === 'live'
+  const isReview = status === 'review'
   const isPosting = status === 'posting'
   const showFallback = status === 'denied' || status === 'unsupported'
   const isFront = facing === 'user'
@@ -173,16 +209,16 @@ export function CameraCapture({ onClose, stopKey }: CameraCaptureProps) {
       aria-modal="true"
       aria-label="In-app camera"
       style={{
-        // Pin to the centered mobile frame column (max 430px) so the camera
-        // fills the frame and stays put regardless of gallery scroll position.
+        // Full-screen overlay above the bottom nav. Pinned to the centered
+        // mobile-frame column so it fills the 430px frame and ignores gallery scroll.
         position: 'fixed',
-        top: 0,
-        bottom: 0,
+        inset: 0,
         left: '50%',
+        right: 'auto',
         transform: 'translateX(-50%)',
         width: 'min(100%, var(--frame-max))',
-        zIndex: 60,
-        background: '#0a1413',
+        zIndex: 1000,
+        background: '#000',
         animation: 'kfade .2s ease',
         display: 'flex',
         flexDirection: 'column',
@@ -196,10 +232,10 @@ export function CameraCapture({ onClose, stopKey }: CameraCaptureProps) {
         accept="image/*"
         capture="environment"
         hidden
-        onChange={(e) => onFallbackFile(e.target.files)}
+        onChange={(e) => void onFallbackFile(e.target.files)}
       />
 
-      {/* Live preview (or solid backdrop while denied/unsupported). */}
+      {/* Live preview — kept mounted so the stream survives review/posting. */}
       <video
         ref={videoRef}
         playsInline
@@ -214,12 +250,29 @@ export function CameraCapture({ onClose, stopKey }: CameraCaptureProps) {
           objectFit: 'cover',
           // Mirror the front-camera preview like a selfie cam.
           transform: isFront ? 'scaleX(-1)' : 'none',
-          background: '#0a1413',
-          opacity: showFallback ? 0 : 1,
+          background: '#000',
+          // Hidden under the review still and the fallback backdrop.
+          opacity: showFallback || isReview ? 0 : 1,
         }}
       />
 
-      {/* Top bar: brand label + close. */}
+      {/* Captured still under review (sits over the paused video). */}
+      {shot && (isReview || isPosting || status === 'posted') && (
+        <img
+          src={shot.url}
+          alt="Captured photo preview"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            background: '#000',
+          }}
+        />
+      )}
+
+      {/* Top bar: brand label + close. Respects the safe-area top inset. */}
       <div
         style={{
           position: 'relative',
@@ -227,8 +280,11 @@ export function CameraCapture({ onClose, stopKey }: CameraCaptureProps) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '14px 16px',
-          background: 'linear-gradient(rgba(0,0,0,.5),transparent)',
+          padding: TOP_INSET,
+          paddingLeft: 16,
+          paddingRight: 16,
+          paddingBottom: 14,
+          background: 'linear-gradient(rgba(0,0,0,.55),transparent)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -243,12 +299,12 @@ export function CameraCapture({ onClose, stopKey }: CameraCaptureProps) {
           aria-label="Close camera"
           className={`pressable ${focus.ringOnDark}`}
           style={{
-            width: 36,
-            height: 36,
+            width: 38,
+            height: 38,
             borderRadius: '50%',
             border: 'none',
             cursor: 'pointer',
-            background: 'rgba(0,0,0,.42)',
+            background: 'rgba(0,0,0,.45)',
             color: '#fff',
             display: 'flex',
             alignItems: 'center',
@@ -273,7 +329,8 @@ export function CameraCapture({ onClose, stopKey }: CameraCaptureProps) {
           style={{
             position: 'relative',
             zIndex: 2,
-            margin: '0 22px 8px',
+            margin: '0 22px',
+            marginBottom: SHUTTER_BOTTOM,
             padding: '16px 18px',
             borderRadius: 18,
             background: 'rgba(255,255,255,.96)',
@@ -290,13 +347,12 @@ export function CameraCapture({ onClose, stopKey }: CameraCaptureProps) {
           <button
             type="button"
             onClick={() => fallbackInputRef.current?.click()}
-            disabled={isPosting}
             className={`pressable ${focus.ring}`}
             style={{
               marginTop: 12,
               width: '100%',
               border: 'none',
-              cursor: isPosting ? 'default' : 'pointer',
+              cursor: 'pointer',
               background: 'linear-gradient(135deg,var(--primary),var(--primary-d))',
               borderRadius: 14,
               padding: '12px 16px',
@@ -306,13 +362,13 @@ export function CameraCapture({ onClose, stopKey }: CameraCaptureProps) {
               fontFamily: "'Baloo 2',sans-serif",
             }}
           >
-            {isPosting ? 'Posting…' : 'Open phone camera'}
+            Open phone camera
           </button>
         </div>
       )}
 
-      {/* Bottom control bar: flip + shutter. */}
-      {!showFallback && (
+      {/* LIVE controls: flip + large shutter, lifted above the home indicator. */}
+      {isLive && (
         <div
           style={{
             position: 'relative',
@@ -320,28 +376,31 @@ export function CameraCapture({ onClose, stopKey }: CameraCaptureProps) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 36,
-            padding: '20px 22px 30px',
+            gap: 40,
+            paddingLeft: 22,
+            paddingRight: 22,
+            paddingTop: 22,
+            paddingBottom: SHUTTER_BOTTOM,
             background: 'linear-gradient(transparent,rgba(0,0,0,.55))',
           }}
         >
-          {/* Spacer to keep the shutter centred opposite the flip button. */}
-          <div style={{ width: 50, height: 50, flex: 'none' }} aria-hidden="true" />
+          {/* Spacer to keep the shutter optically centred opposite the flip button. */}
+          <div style={{ width: 52, height: 52, flex: 'none' }} aria-hidden="true" />
 
           <button
             type="button"
             onClick={shoot}
-            disabled={!isLive}
             aria-label="Take photo"
             className={`pressable ${focus.ringOnDark}`}
             style={{
-              width: 76,
-              height: 76,
+              width: 78,
+              height: 78,
               borderRadius: '50%',
-              border: '5px solid rgba(255,255,255,.92)',
-              cursor: isLive ? 'pointer' : 'default',
-              background: 'transparent',
-              padding: 4,
+              // Teal shutter ring around a white shutter.
+              border: '4px solid var(--primary)',
+              cursor: 'pointer',
+              background: 'rgba(0,0,0,.25)',
+              padding: 5,
               flex: 'none',
               display: 'flex',
               alignItems: 'center',
@@ -354,11 +413,9 @@ export function CameraCapture({ onClose, stopKey }: CameraCaptureProps) {
                 width: '100%',
                 height: '100%',
                 borderRadius: '50%',
-                background: isPosting
-                  ? 'var(--accent)'
-                  : 'linear-gradient(135deg,#fff,#e9f3f1)',
+                background: 'linear-gradient(135deg,#fff,#e9f3f1)',
                 display: 'block',
-                animation: isPosting ? 'kspin 1s linear infinite' : 'none',
+                boxShadow: '0 2px 8px rgba(0,0,0,.25)',
               }}
             />
           </button>
@@ -366,16 +423,15 @@ export function CameraCapture({ onClose, stopKey }: CameraCaptureProps) {
           <button
             type="button"
             onClick={flipCamera}
-            disabled={!isLive}
             aria-label="Flip camera"
             className={`pressable ${focus.ringOnDark}`}
             style={{
-              width: 50,
-              height: 50,
+              width: 52,
+              height: 52,
               borderRadius: '50%',
               border: 'none',
-              cursor: isLive ? 'pointer' : 'default',
-              background: 'rgba(0,0,0,.42)',
+              cursor: 'pointer',
+              background: 'rgba(0,0,0,.45)',
               color: '#fff',
               display: 'flex',
               alignItems: 'center',
@@ -389,6 +445,88 @@ export function CameraCapture({ onClose, stopKey }: CameraCaptureProps) {
               <path d="M3 7h12a4 4 0 0 1 4 4M3 7l3-3M3 7l3 3" />
               <path d="M21 17H9a4 4 0 0 1-4-4M21 17l-3 3M21 17l-3-3" />
             </svg>
+          </button>
+        </div>
+      )}
+
+      {/* REVIEW controls: Retake + Post, shown over the captured still. */}
+      {(isReview || isPosting) && shot && (
+        <div
+          style={{
+            position: 'relative',
+            zIndex: 2,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            paddingLeft: 22,
+            paddingRight: 22,
+            paddingTop: 22,
+            paddingBottom: SHUTTER_BOTTOM,
+            background: 'linear-gradient(transparent,rgba(0,0,0,.6))',
+          }}
+        >
+          <button
+            type="button"
+            onClick={retake}
+            disabled={isPosting}
+            aria-label="Retake photo"
+            className={`pressable ${focus.ringOnDark}`}
+            style={{
+              flex: 1,
+              border: '2px solid rgba(255,255,255,.85)',
+              cursor: isPosting ? 'default' : 'pointer',
+              background: 'rgba(0,0,0,.35)',
+              borderRadius: 16,
+              padding: '14px 16px',
+              color: '#fff',
+              fontSize: 14,
+              fontWeight: 800,
+              fontFamily: "'Baloo 2',sans-serif",
+              backdropFilter: 'blur(4px)',
+              opacity: isPosting ? 0.55 : 1,
+            }}
+          >
+            Retake
+          </button>
+          <button
+            type="button"
+            onClick={() => void post()}
+            disabled={isPosting}
+            aria-label="Post photo to the gallery"
+            className={`pressable ${focus.ring}`}
+            style={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              border: 'none',
+              cursor: isPosting ? 'default' : 'pointer',
+              background: 'linear-gradient(135deg,var(--primary),var(--primary-d))',
+              borderRadius: 16,
+              padding: '14px 16px',
+              color: '#fff',
+              fontSize: 14,
+              fontWeight: 800,
+              fontFamily: "'Baloo 2',sans-serif",
+              boxShadow: '0 10px 22px var(--shadow)',
+            }}
+          >
+            {isPosting && (
+              <span
+                aria-hidden="true"
+                style={{
+                  width: 16,
+                  height: 16,
+                  borderRadius: '50%',
+                  border: '2px solid rgba(255,255,255,.45)',
+                  borderTopColor: '#fff',
+                  display: 'inline-block',
+                  animation: 'kspin 1s linear infinite',
+                }}
+              />
+            )}
+            {isPosting ? 'Posting…' : 'Post'}
           </button>
         </div>
       )}

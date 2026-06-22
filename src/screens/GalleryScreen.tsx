@@ -104,8 +104,8 @@ export function GalleryScreen() {
           </div>
         </button>
 
-        {visibleMedia.map((m, i) => (
-          <MediaTile key={i} item={m} />
+        {visibleMedia.map((m) => (
+          <MediaTile key={m.id} item={m} />
         ))}
       </div>
 

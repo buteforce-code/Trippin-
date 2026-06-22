@@ -12,6 +12,22 @@ import { NextStopCard } from '../components/home/NextStopCard'
 import { HomeAnnouncementBanner } from '../components/announcements/HomeAnnouncementBanner'
 import focus from '../components/ui/focus.module.css'
 
+const HEADER_ICON_BTN = {
+  width: 38,
+  height: 38,
+  borderRadius: '50%',
+  border: 'none',
+  background: '#fff',
+  boxShadow: '0 3px 12px rgba(11,77,74,.1)',
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontSize: 18,
+  lineHeight: 1,
+  padding: 0,
+} as const
+
 /** Small round 📣 entry-point button mirroring the header's log/clock icon button. */
 function AnnouncementsIconButton() {
   const navigate = useNavigate()
@@ -21,23 +37,29 @@ function AnnouncementsIconButton() {
       onClick={() => navigate('/announcements')}
       className={`pressable ${focus.ring}`}
       aria-label="Open announcements"
-      style={{
-        width: 38,
-        height: 38,
-        borderRadius: '50%',
-        border: 'none',
-        background: '#fff',
-        boxShadow: '0 3px 12px rgba(11,77,74,.1)',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: 18,
-        lineHeight: 1,
-        padding: 0,
-      }}
+      style={HEADER_ICON_BTN}
     >
       <span aria-hidden="true">📣</span>
+    </button>
+  )
+}
+
+/** Crew/people entry-point — relocated here when the bottom nav reclaimed the Trip tab. */
+function CrewIconButton() {
+  const navigate = useNavigate()
+  return (
+    <button
+      type="button"
+      onClick={() => navigate('/trips')}
+      className={`pressable ${focus.ring}`}
+      aria-label="Open crew & trips"
+      style={HEADER_ICON_BTN}
+    >
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--primary-d)" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <circle cx="9" cy="7" r="3" />
+        <path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75M21 21v-2a4 4 0 0 0-3-3.85" />
+      </svg>
     </button>
   )
 }
@@ -60,7 +82,8 @@ export function HomeScreen() {
   return (
     <div>
       <HomeHeader youName={youName} youInitial={youInitial} />
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 10 }}>
+        <CrewIconButton />
         <AnnouncementsIconButton />
       </div>
       <HomeAnnouncementBanner />

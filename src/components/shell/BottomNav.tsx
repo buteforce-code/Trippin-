@@ -26,11 +26,10 @@ const MoneyIcon = (
     <path d="M3 10h18M16.5 14.5h.5" />
   </svg>
 )
-const CrewIcon = (
+const TripIcon = (
   <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="9" cy="7" r="3" />
-    <path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" />
-    <path d="M16 3.13a4 4 0 0 1 0 7.75M21 21v-2a4 4 0 0 0-3-3.85" />
+    <path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6z" />
+    <path d="M9 3v15M15 6v15" />
   </svg>
 )
 const GalleryIcon = (
@@ -46,7 +45,7 @@ const LEFT_TABS: TabDef[] = [
   { path: '/money', label: 'Money', icon: MoneyIcon },
 ]
 const RIGHT_TABS: TabDef[] = [
-  { path: '/trips', label: 'Crew', icon: CrewIcon },
+  { path: '/trip', label: 'Trip', icon: TripIcon },
   { path: '/gallery', label: 'Gallery', icon: GalleryIcon },
 ]
 

@@ -79,6 +79,12 @@ export function useTripSnapshot() {
     queryKey: tripKeys.snapshot(currentTripId),
     queryFn: () => tripRepository.getSnapshot(currentTripId as string),
     enabled: Boolean(currentTripId),
+    // The snapshot is the shared source of truth (incl. the gallery), so it must
+    // pick up another member's writes. The global config sets a 30s staleTime and
+    // disables focus refetch; override here so opening or refocusing a screen
+    // (e.g. the Gallery) always pulls the latest media/expenses for THIS trip.
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
   })
 }
 

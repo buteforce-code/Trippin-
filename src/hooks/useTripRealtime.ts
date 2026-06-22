@@ -12,8 +12,12 @@ export function useTripRealtime() {
   useEffect(() => {
     const client = supabase
     if (!client) return
-    // Prefix match: invalidates every trip-scoped snapshot regardless of trip id.
-    const invalidate = () => qc.invalidateQueries({ queryKey: ['trip', 'snapshot'] })
+    // Prefix match ['trip','snapshot'] catches every per-trip snapshot key
+    // (['trip','snapshot', tripId]) regardless of which trip is active.
+    // refetchType:'all' forces inactive snapshots to refetch too, so a member
+    // who isn't currently on the Gallery still gets fresh media on return.
+    const invalidate = () =>
+      qc.invalidateQueries({ queryKey: ['trip', 'snapshot'], refetchType: 'all' })
 
     const channel = client
       .channel('trip-changes')

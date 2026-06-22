@@ -1,4 +1,5 @@
 import { useMembers, useSetMemberRole } from '../../hooks/queries'
+import { useRemoveMember } from '../../hooks/useCrew'
 import { useTrip } from '../../providers/TripProvider'
 import { useAuth } from '../../providers/AuthProvider'
 import { MUTED_TEXT } from '../ui/a11y'
@@ -19,6 +20,7 @@ export function MemberRoster({ tripId }: MemberRosterProps) {
   const myUserId = session?.user.id ?? null
   const { data: members, isLoading } = useMembers(tripId)
   const setRole = useSetMemberRole(tripId)
+  const removeMember = useRemoveMember(tripId)
 
   if (isLoading) {
     return <div style={{ fontSize: 13, color: MUTED_TEXT, fontWeight: 600, padding: '8px 2px' }}>Loading crew…</div>
@@ -31,6 +33,10 @@ export function MemberRoster({ tripId }: MemberRosterProps) {
 
   const onSetRole = (memberId: string, role: MemberRole) => {
     setRole.mutate({ memberId, role })
+  }
+
+  const onRemove = (memberId: string) => {
+    removeMember.mutate({ memberId })
   }
 
   return (
@@ -47,6 +53,9 @@ export function MemberRoster({ tripId }: MemberRosterProps) {
             isLastRouteHead={routeHeadCount <= 1}
             busy={setRole.isPending}
             onSetRole={onSetRole}
+            canRemove={isRouteHead}
+            removing={removeMember.isPending}
+            onRemove={onRemove}
           />
         ))
       )}

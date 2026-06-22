@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Avatar } from '../ui/Avatar'
 import { MUTED_TEXT } from '../ui/a11y'
 import focus from '../ui/focus.module.css'
@@ -16,6 +17,11 @@ interface MemberRosterRowProps {
   /** Disable controls while a role change is in flight. */
   busy: boolean
   onSetRole: (memberId: string, role: MemberRole) => void
+  /** Whether the viewer may remove members (Route Head only). */
+  canRemove: boolean
+  /** Disable removal while a remove is in flight. */
+  removing: boolean
+  onRemove: (memberId: string) => void
 }
 
 interface RoleAction {
@@ -55,9 +61,17 @@ export function MemberRosterRow({
   isLastRouteHead,
   busy,
   onSetRole,
+  canRemove,
+  removing,
+  onRemove,
 }: MemberRosterRowProps) {
   const displayName = member.nickname || member.name
   const actions = canManage && !isSelf ? roleActions(member.role, isLastRouteHead) : []
+  const [confirmingRemove, setConfirmingRemove] = useState(false)
+
+  // Never offer removal for self or for the trip's sole Route Head — a trip must
+  // always keep an owner, and self-removal would orphan the caller's view.
+  const showRemove = canRemove && !isSelf && !(member.role === 'route_head' && isLastRouteHead)
 
   return (
     <div
@@ -118,8 +132,80 @@ export function MemberRosterRow({
             ))}
           </div>
         )}
+        {showRemove && confirmingRemove && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6, marginTop: 8 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: MUTED_TEXT }}>Remove {displayName}?</span>
+            <button
+              type="button"
+              disabled={removing}
+              onClick={() => onRemove(member.id)}
+              className={`pressable ${focus.ring}`}
+              style={{
+                cursor: removing ? 'default' : 'pointer',
+                fontWeight: 800,
+                fontSize: 10.5,
+                padding: '5px 10px',
+                borderRadius: 12,
+                border: 'none',
+                background: '#e5484d',
+                color: '#fff',
+                opacity: removing ? 0.55 : 1,
+              }}
+            >
+              {removing ? 'Removing…' : 'Yes, remove'}
+            </button>
+            <button
+              type="button"
+              disabled={removing}
+              onClick={() => setConfirmingRemove(false)}
+              className={`pressable ${focus.ring}`}
+              style={{
+                cursor: removing ? 'default' : 'pointer',
+                fontWeight: 800,
+                fontSize: 10.5,
+                padding: '5px 10px',
+                borderRadius: 12,
+                border: '1.5px solid #e3efec',
+                background: 'var(--bg)',
+                color: MUTED_TEXT,
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        )}
       </div>
-      <RoleBadge role={member.role} />
+      {showRemove && !confirmingRemove ? (
+        <button
+          type="button"
+          disabled={removing}
+          onClick={() => setConfirmingRemove(true)}
+          className={`pressable ${focus.ring}`}
+          aria-label={`Remove ${displayName}`}
+          style={{
+            flex: 'none',
+            width: 34,
+            height: 34,
+            borderRadius: 12,
+            border: '1.5px solid #f3d4d5',
+            background: '#fff',
+            color: '#e5484d',
+            cursor: removing ? 'default' : 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 0,
+            opacity: removing ? 0.55 : 1,
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+            <path d="M10 11v6M14 11v6" />
+          </svg>
+        </button>
+      ) : (
+        <RoleBadge role={member.role} />
+      )}
     </div>
   )
 }
