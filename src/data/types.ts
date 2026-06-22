@@ -68,6 +68,8 @@ export interface CreateTripInput {
   perHead?: number
   fullName?: string
   nickname?: string
+  startDate?: string
+  endDate?: string
 }
 
 export interface JoinTripInput {

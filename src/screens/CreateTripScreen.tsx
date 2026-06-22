@@ -19,6 +19,8 @@ export function CreateTripScreen() {
   const [perHead, setPerHead] = useState('')
   const [nickname, setNickname] = useState('')
   const [fullName, setFullName] = useState('')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
   const [status, setStatus] = useState<Status>('idle')
   const [error, setError] = useState<string | null>(null)
 
@@ -35,6 +37,8 @@ export function CreateTripScreen() {
         perHead: Number.isFinite(perHeadNum) && perHeadNum > 0 ? perHeadNum : undefined,
         fullName: fullName.trim() || undefined,
         nickname: nickname.trim() || undefined,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
       })
       setCurrentTripId(newTripId)
       navigate('/', { replace: true })
@@ -102,6 +106,31 @@ export function CreateTripScreen() {
               className={focus.ring}
               style={input}
             />
+          </div>
+
+          <div style={{ marginTop: 16, display: 'flex', gap: 12 }}>
+            <div style={{ flex: 1 }}>
+              <label htmlFor="trip-startdate" style={label}>Start Date (optional)</label>
+              <input
+                id="trip-startdate"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className={focus.ring}
+                style={input}
+              />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label htmlFor="trip-enddate" style={label}>End Date (optional)</label>
+              <input
+                id="trip-enddate"
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className={focus.ring}
+                style={input}
+              />
+            </div>
           </div>
 
           <div role="status" aria-live="polite">

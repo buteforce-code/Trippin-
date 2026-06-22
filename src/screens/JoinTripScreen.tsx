@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useInviteInfo, useJoinTrip } from '../hooks/queries'
 import { useTrip } from '../providers/TripProvider'
 import { card, errorText, heading, input, label, primaryBtn, screenWrap, subtle } from '../components/onboarding/formStyles'
@@ -20,11 +20,14 @@ const ROLE_LABEL: Record<string, string> = {
  * useJoinTrip → switch to the joined trip → home.
  */
 export function JoinTripScreen() {
-  const { token: routeToken } = useParams<{ token: string }>()
+  const { token: paramToken } = useParams<{ token: string }>()
+  const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const joinTrip = useJoinTrip()
   const { setCurrentTripId } = useTrip()
 
+  // Token can arrive as a path param (`/join/:token`) or a query (`?token=`).
+  const routeToken = paramToken ?? searchParams.get('token') ?? undefined
   const [manualToken, setManualToken] = useState('')
   const token = routeToken ?? (manualToken.trim() || undefined)
   const { data: invite, isLoading: inviteLoading } = useInviteInfo(token)

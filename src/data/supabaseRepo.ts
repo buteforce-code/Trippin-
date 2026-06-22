@@ -135,7 +135,7 @@ export class SupabaseTripRepository implements TripRepository {
     })
   }
 
-  async createTrip({ name, perHead, fullName, nickname }: CreateTripInput): Promise<string> {
+  async createTrip({ name, perHead, fullName, nickname, startDate, endDate }: CreateTripInput): Promise<string> {
     const { data, error } = await this.client.rpc('create_trip', {
       p_name: name,
       p_per_head: perHead,
@@ -143,7 +143,16 @@ export class SupabaseTripRepository implements TripRepository {
       p_nickname: nickname,
     })
     if (error) throw error
-    return data as string
+    const tripId = data as string
+
+    if (startDate || endDate) {
+      const patch: any = {}
+      if (startDate) patch.start_date = startDate
+      if (endDate) patch.end_date = endDate
+      await this.client.from('trips').update(patch).eq('id', tripId)
+    }
+
+    return tripId
   }
 
   async joinTrip({ token, fullName, nickname }: JoinTripInput): Promise<string> {

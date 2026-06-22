@@ -3,23 +3,19 @@ import { useTrip } from '../providers/TripProvider'
 import { fmt } from '../lib/money'
 import { MUTED_TEXT } from '../components/ui/a11y'
 import focus from '../components/ui/focus.module.css'
-import type { MemberRole } from '../data/types'
-
-const ROLE_BADGE: Record<MemberRole, { label: string; bg: string; color: string }> = {
-  route_head: { label: 'Route Head', bg: '#D7F5F1', color: '#0BA5A5' },
-  assistant: { label: 'Assistant', bg: '#FFF1CC', color: '#B8860B' },
-  member: { label: 'Member', bg: '#eef4f2', color: '#7c948f' },
-}
+import { ROLE_BADGE } from '../components/members/roleBadgeStyles'
+import { MemberRoster } from '../components/members/MemberRoster'
+import { InvitePanel } from '../components/invites/InvitePanel'
 
 const SECTION_TITLE = { fontSize: 15, fontWeight: 800, fontFamily: "'Baloo 2',sans-serif" } as const
 
 /**
- * Trip switcher. Lists every trip the user belongs to, marks the active one,
- * and lets them switch or start a new trip.
+ * Trips + people hub. Lists every trip (switcher), then for the active trip
+ * shows the crew roster, Route-Head role controls, and invite tools.
  */
 export function TripsScreen() {
   const navigate = useNavigate()
-  const { trips, currentTripId, setCurrentTripId, isLoadingTrips } = useTrip()
+  const { trips, currentTripId, currentTrip, setCurrentTripId, isRouteHead, isLoadingTrips } = useTrip()
 
   const onSwitch = (id: string) => {
     setCurrentTripId(id)
@@ -91,8 +87,22 @@ export function TripsScreen() {
         </button>
       </div>
 
-      {/* TODO(agent): add member roster, role management, and invite-link creation
-          here for the Route Head (useMembers / useSetMemberRole / useCreateInvite). */}
+      {currentTripId && (
+        <>
+          <div style={{ ...SECTION_TITLE, margin: '26px 2px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span>Crew{currentTrip ? ` · ${currentTrip.name}` : ''}</span>
+            {!isRouteHead && <span style={{ fontSize: 11, fontWeight: 700, color: MUTED_TEXT }}>View only</span>}
+          </div>
+          <MemberRoster tripId={currentTripId} />
+
+          {isRouteHead && (
+            <>
+              <div style={{ ...SECTION_TITLE, margin: '26px 2px 10px' }}>Invite people</div>
+              <InvitePanel tripId={currentTripId} tripName={currentTrip?.name} />
+            </>
+          )}
+        </>
+      )}
     </div>
   )
 }

@@ -9,6 +9,7 @@ const MoneyScreen = lazy(() => import('./screens/MoneyScreen').then((m) => ({ de
 const TripScreen = lazy(() => import('./screens/TripScreen').then((m) => ({ default: m.TripScreen })))
 const GalleryScreen = lazy(() => import('./screens/GalleryScreen').then((m) => ({ default: m.GalleryScreen })))
 const TripsScreen = lazy(() => import('./screens/TripsScreen').then((m) => ({ default: m.TripsScreen })))
+const AnnouncementsScreen = lazy(() => import('./screens/AnnouncementsScreen').then((m) => ({ default: m.AnnouncementsScreen })))
 
 // Setup / onboarding screens render full-page (their own background), so they
 // live outside the MobileFrame shell and outside the trip gate.
@@ -38,6 +39,7 @@ function App() {
         <Route path="/trip" element={<TripScreen />} />
         <Route path="/gallery" element={<GalleryScreen />} />
         <Route path="/trips" element={<TripsScreen />} />
+        <Route path="/announcements" element={<AnnouncementsScreen />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
