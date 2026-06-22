@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { useTripSnapshot, useUploadMedia } from '../hooks/queries'
 import { useCountUp } from '../hooks/useCountUp'
 import { MediaTile } from '../components/gallery/MediaTile'
+import { CameraCapture } from '../components/gallery/CameraCapture'
 import { FilterChips, type FilterChip } from '../components/ui/FilterChips'
 import { MUTED_TEXT } from '../components/ui/a11y'
 import focus from '../components/ui/focus.module.css'
@@ -19,6 +20,7 @@ export function GalleryScreen() {
   const t = useCountUp()
   const [filter, setFilter] = useState('all')
   const [error, setError] = useState<string | null>(null)
+  const [cameraOpen, setCameraOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   if (!data) return null
@@ -82,10 +84,34 @@ export function GalleryScreen() {
       <FilterChips chips={GALLERY_FILTERS} active={filter} onSelect={setFilter} activeBg="var(--primary)" />
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 11 }}>
+        <button
+          type="button"
+          onClick={() => setCameraOpen(true)}
+          aria-label="Capture an Instant with the camera"
+          className={`pressable ${focus.ring}`}
+          style={{ position: 'relative', overflow: 'hidden', aspectRatio: '3 / 4', border: 'none', cursor: 'pointer', borderRadius: 18, padding: 0, color: '#fff', background: 'linear-gradient(150deg,var(--primary),var(--accent))', boxShadow: '0 10px 22px var(--shadow)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 9 }}
+        >
+          <div style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: '46%', background: 'linear-gradient(100deg,transparent,rgba(255,255,255,.22),transparent)', animation: 'kshine 4.5s ease-in-out infinite' }} aria-hidden="true" />
+          <div style={{ position: 'relative', width: 52, height: 52, borderRadius: '50%', background: 'rgba(255,255,255,.92)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 14px rgba(0,0,0,.18)', animation: 'kfloat 3s ease-in-out infinite' }}>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--primary-d)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M4 8a2 2 0 0 1 2-2h1.5l1-1.5h5l1 1.5H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" />
+              <circle cx="12" cy="12.5" r="3.2" />
+            </svg>
+          </div>
+          <div style={{ position: 'relative', textAlign: 'center' }}>
+            <div style={{ fontSize: 14, fontWeight: 800, fontFamily: "'Baloo 2',sans-serif" }}>Capture</div>
+            <div style={{ fontSize: 10.5, fontWeight: 700, opacity: 0.92 }}>Snap an Instant</div>
+          </div>
+        </button>
+
         {visibleMedia.map((m, i) => (
           <MediaTile key={i} item={m} />
         ))}
       </div>
+
+      {cameraOpen && (
+        <CameraCapture onClose={() => setCameraOpen(false)} stopKey={filter === 'all' ? null : filter} />
+      )}
     </div>
   )
 }

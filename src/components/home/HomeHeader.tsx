@@ -1,6 +1,8 @@
+import { useNavigate } from 'react-router-dom'
 import type { ThemeName } from '../../data/types'
 import { useTheme } from '../../providers/ThemeProvider'
 import { useUI } from '../../providers/UIProvider'
+import { useTrip } from '../../providers/TripProvider'
 import { MUTED_TEXT } from '../ui/a11y'
 import focus from '../ui/focus.module.css'
 
@@ -10,52 +12,81 @@ const SWATCHES: { name: ThemeName; gradient: string }[] = [
   { name: 'palm', gradient: 'linear-gradient(135deg,#16A571,#FFD23F)' },
 ]
 
-export function HomeHeader() {
+const ROLE_LABEL: Record<string, string> = {
+  route_head: 'Route Head',
+  assistant: 'Assistant',
+  member: 'Member',
+}
+
+interface HomeHeaderProps {
+  /** The signed-in member's display name ("you" member) — defaults sensibly. */
+  youName?: string
+  youInitial?: string
+}
+
+export function HomeHeader({ youName = 'Traveller', youInitial = 'T' }: HomeHeaderProps) {
   const { theme, setTheme } = useTheme()
   const { openLogSheet } = useUI()
+  const { myRole, currentTrip } = useTrip()
+  const navigate = useNavigate()
+
+  const roleLabel = myRole ? ROLE_LABEL[myRole] : null
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 2px 14px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
-        <div
-          style={{
-            width: 42,
-            height: 42,
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg,var(--primary),var(--primary-d))',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#fff',
-            fontWeight: 800,
-            fontSize: 16,
-            fontFamily: "'Baloo 2',sans-serif",
-            boxShadow: '0 6px 14px var(--shadow)',
-          }}
+        {/* Avatar + name double as the trip switcher entry point. */}
+        <button
+          type="button"
+          onClick={() => navigate('/trips')}
+          aria-label="Switch trip"
+          className={`pressable ${focus.ring}`}
+          style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 11 }}
         >
-          A
-        </div>
-        <div>
-          <div style={{ fontSize: 13, color: MUTED_TEXT, fontWeight: 600, lineHeight: 1 }}>Namaste 🌴</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 2 }}>
-            <span style={{ fontSize: 18, fontWeight: 800, fontFamily: "'Baloo 2',sans-serif", lineHeight: 1 }}>Arjun</span>
-            <span
-              style={{
-                fontSize: 9,
-                fontWeight: 800,
-                letterSpacing: '.4px',
-                textTransform: 'uppercase',
-                color: 'var(--primary-d)',
-                background: 'var(--tint)',
-                padding: '3px 7px',
-                borderRadius: 9,
-                whiteSpace: 'nowrap',
-              }}
-            >
-              Route Head
-            </span>
+          <div
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg,var(--primary),var(--primary-d))',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff',
+              fontWeight: 800,
+              fontSize: 16,
+              fontFamily: "'Baloo 2',sans-serif",
+              boxShadow: '0 6px 14px var(--shadow)',
+            }}
+          >
+            {youInitial}
           </div>
-        </div>
+          <div style={{ textAlign: 'left' }}>
+            <div style={{ fontSize: 13, color: MUTED_TEXT, fontWeight: 600, lineHeight: 1 }}>
+              {currentTrip?.name ?? 'Namaste 🌴'}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 2 }}>
+              <span style={{ fontSize: 18, fontWeight: 800, fontFamily: "'Baloo 2',sans-serif", lineHeight: 1 }}>{youName}</span>
+              {roleLabel && (
+                <span
+                  style={{
+                    fontSize: 9,
+                    fontWeight: 800,
+                    letterSpacing: '.4px',
+                    textTransform: 'uppercase',
+                    color: 'var(--primary-d)',
+                    background: 'var(--tint)',
+                    padding: '3px 7px',
+                    borderRadius: 9,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {roleLabel}
+                </span>
+              )}
+            </div>
+          </div>
+        </button>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>

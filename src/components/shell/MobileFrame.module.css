@@ -22,6 +22,27 @@
   position: absolute;
   border-radius: 50%;
 }
+@keyframes floatSun {
+  0% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-30px, 20px) scale(1.1); }
+  66% { transform: translate(10px, 40px) scale(0.95); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+@keyframes floatPrimary {
+  0% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(40px, -30px) scale(1.05); }
+  66% { transform: translate(20px, -60px) scale(0.9); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+@keyframes floatAccent {
+  0% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-20px, -20px) scale(1.15); }
+  66% { transform: translate(-50px, 10px) scale(1.05); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
 .blobSun {
   top: -70px;
   right: -60px;
@@ -29,6 +50,7 @@
   height: 220px;
   background: radial-gradient(circle, var(--sun), transparent 70%);
   opacity: 0.16;
+  animation: floatSun 12s ease-in-out infinite;
 }
 .blobPrimary {
   bottom: 150px;
@@ -37,6 +59,7 @@
   height: 240px;
   background: radial-gradient(circle, var(--primary), transparent 70%);
   opacity: 0.12;
+  animation: floatPrimary 15s ease-in-out infinite reverse;
 }
 .blobAccent {
   bottom: -50px;
@@ -45,25 +68,9 @@
   height: 200px;
   background: radial-gradient(circle, var(--accent), transparent 70%);
   opacity: 0.12;
+  animation: floatAccent 10s ease-in-out infinite;
 }
 
-.statusBar {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 22px 4px;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--ink);
-  flex: none;
-}
-.statusIcons {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
 
 .scroll {
   position: relative;

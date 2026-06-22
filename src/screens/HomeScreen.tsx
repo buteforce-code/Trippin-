@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import { useTripSnapshot } from '../hooks/queries'
 import { useCountUp } from '../hooks/useCountUp'
 import { computeCategoryBreakdown, computeMoneySummary, donutSegments, fmt, short } from '../lib/money'
@@ -8,6 +9,38 @@ import { ContributionsCard } from '../components/home/ContributionsCard'
 import { SpendDonut } from '../components/home/SpendDonut'
 import { RecentActivity } from '../components/home/RecentActivity'
 import { NextStopCard } from '../components/home/NextStopCard'
+import { HomeAnnouncementBanner } from '../components/announcements/HomeAnnouncementBanner'
+import focus from '../components/ui/focus.module.css'
+
+/** Small round 📣 entry-point button mirroring the header's log/clock icon button. */
+function AnnouncementsIconButton() {
+  const navigate = useNavigate()
+  return (
+    <button
+      type="button"
+      onClick={() => navigate('/announcements')}
+      className={`pressable ${focus.ring}`}
+      aria-label="Open announcements"
+      style={{
+        width: 38,
+        height: 38,
+        borderRadius: '50%',
+        border: 'none',
+        background: '#fff',
+        boxShadow: '0 3px 12px rgba(11,77,74,.1)',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: 18,
+        lineHeight: 1,
+        padding: 0,
+      }}
+    >
+      <span aria-hidden="true">📣</span>
+    </button>
+  )
+}
 
 export function HomeScreen() {
   const { data } = useTripSnapshot()
@@ -19,9 +52,18 @@ export function HomeScreen() {
   const categories = computeCategoryBreakdown(data.expenses)
   const av = (n: number) => n * t
 
+  // The signed-in member is tagged with a "(you)" suffix in the snapshot.
+  const youMember = data.members.find((m) => m.name.includes('(you)'))
+  const youName = youMember ? youMember.name.replace(' (you)', '') : undefined
+  const youInitial = youMember?.initials
+
   return (
     <div>
-      <HomeHeader />
+      <HomeHeader youName={youName} youInitial={youInitial} />
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+        <AnnouncementsIconButton />
+      </div>
+      <HomeAnnouncementBanner />
       <HeroBalance
         remainingStr={fmt(av(summary.remaining))}
         collectedStr={fmt(av(summary.collected))}

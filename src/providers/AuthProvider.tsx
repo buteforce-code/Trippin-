@@ -5,10 +5,8 @@ import { isSupabaseConfigured, supabase } from '../lib/supabase'
 interface AuthContextValue {
   session: Session | null
   loading: boolean
-  /** Emails a 6-digit sign-in code (immune to link-prefetch scanners). */
-  sendCode: (email: string) => Promise<{ error: string | null }>
-  /** Verifies the 6-digit code and establishes the session in-app (no redirect). */
-  verifyCode: (email: string, code: string) => Promise<{ error: string | null }>
+  /** Starts the Google OAuth redirect flow; returns back to the app origin. */
+  signInWithGoogle: () => Promise<{ error: string | null }>
   signOut: () => Promise<void>
 }
 
@@ -48,21 +46,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       session,
       loading,
-      sendCode: async (email: string) => {
+      signInWithGoogle: async () => {
         if (!supabase) return { error: 'Supabase is not configured.' }
-        // No emailRedirectTo: this is a code flow, there is no link to click.
-        const { error } = await supabase.auth.signInWithOtp({
-          email,
-          options: { shouldCreateUser: true },
-        })
-        return { error: readableAuthError(error?.message) }
-      },
-      verifyCode: async (email: string, code: string) => {
-        if (!supabase) return { error: 'Supabase is not configured.' }
-        const { error } = await supabase.auth.verifyOtp({
-          email,
-          token: code,
-          type: 'email',
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: { redirectTo: window.location.origin },
         })
         return { error: readableAuthError(error?.message) }
       },

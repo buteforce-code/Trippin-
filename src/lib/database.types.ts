@@ -7,8 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
@@ -42,22 +40,37 @@ export type Database = {
           kind?: Database["public"]["Enums"]["log_kind"]
           trip_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "activity_log_trip_id_fkey"
-            columns: ["trip_id"]
-            isOneToOne: false
-            referencedRelation: "trip_money_summary"
-            referencedColumns: ["trip_id"]
-          },
-          {
-            foreignKeyName: "activity_log_trip_id_fkey"
-            columns: ["trip_id"]
-            isOneToOne: false
-            referencedRelation: "trips"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
+      }
+      announcements: {
+        Row: {
+          author_name: string
+          author_user_id: string | null
+          body: string
+          created_at: string
+          id: string
+          pinned: boolean
+          trip_id: string
+        }
+        Insert: {
+          author_name: string
+          author_user_id?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          pinned?: boolean
+          trip_id: string
+        }
+        Update: {
+          author_name?: string
+          author_user_id?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          pinned?: boolean
+          trip_id?: string
+        }
+        Relationships: []
       }
       contributions: {
         Row: {
@@ -87,36 +100,7 @@ export type Database = {
           recorded_by?: string | null
           trip_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "contributions_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
-            referencedRelation: "member_balances"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "contributions_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
-            referencedRelation: "members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "contributions_trip_id_fkey"
-            columns: ["trip_id"]
-            isOneToOne: false
-            referencedRelation: "trip_money_summary"
-            referencedColumns: ["trip_id"]
-          },
-          {
-            foreignKeyName: "contributions_trip_id_fkey"
-            columns: ["trip_id"]
-            isOneToOne: false
-            referencedRelation: "trips"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       expenses: {
         Row: {
@@ -155,22 +139,7 @@ export type Database = {
           title?: string
           trip_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "expenses_trip_id_fkey"
-            columns: ["trip_id"]
-            isOneToOne: false
-            referencedRelation: "trip_money_summary"
-            referencedColumns: ["trip_id"]
-          },
-          {
-            foreignKeyName: "expenses_trip_id_fkey"
-            columns: ["trip_id"]
-            isOneToOne: false
-            referencedRelation: "trips"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       media: {
         Row: {
@@ -230,32 +199,21 @@ export type Database = {
           uploader_user_id?: string | null
           width?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "media_trip_id_fkey"
-            columns: ["trip_id"]
-            isOneToOne: false
-            referencedRelation: "trip_money_summary"
-            referencedColumns: ["trip_id"]
-          },
-          {
-            foreignKeyName: "media_trip_id_fkey"
-            columns: ["trip_id"]
-            isOneToOne: false
-            referencedRelation: "trips"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       members: {
         Row: {
           avatar_color: string
           created_at: string
           email: string | null
+          full_name: string | null
           id: string
           initials: string
           is_organizer: boolean
           name: string
+          nickname: string | null
+          prior_contribution_note: string | null
+          role: Database["public"]["Enums"]["member_role"]
           sort_order: number
           trip_id: string
           user_id: string | null
@@ -264,10 +222,14 @@ export type Database = {
           avatar_color: string
           created_at?: string
           email?: string | null
+          full_name?: string | null
           id?: string
           initials: string
           is_organizer?: boolean
           name: string
+          nickname?: string | null
+          prior_contribution_note?: string | null
+          role?: Database["public"]["Enums"]["member_role"]
           sort_order?: number
           trip_id: string
           user_id?: string | null
@@ -276,30 +238,19 @@ export type Database = {
           avatar_color?: string
           created_at?: string
           email?: string | null
+          full_name?: string | null
           id?: string
           initials?: string
           is_organizer?: boolean
           name?: string
+          nickname?: string | null
+          prior_contribution_note?: string | null
+          role?: Database["public"]["Enums"]["member_role"]
           sort_order?: number
           trip_id?: string
           user_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "members_trip_id_fkey"
-            columns: ["trip_id"]
-            isOneToOne: false
-            referencedRelation: "trip_money_summary"
-            referencedColumns: ["trip_id"]
-          },
-          {
-            foreignKeyName: "members_trip_id_fkey"
-            columns: ["trip_id"]
-            isOneToOne: false
-            referencedRelation: "trips"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       stops: {
         Row: {
@@ -347,29 +298,55 @@ export type Database = {
           trip_id?: string
           weather_icon?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "stops_trip_id_fkey"
-            columns: ["trip_id"]
-            isOneToOne: false
-            referencedRelation: "trip_money_summary"
-            referencedColumns: ["trip_id"]
-          },
-          {
-            foreignKeyName: "stops_trip_id_fkey"
-            columns: ["trip_id"]
-            isOneToOne: false
-            referencedRelation: "trips"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
+      }
+      trip_invites: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          max_uses: number | null
+          role: Database["public"]["Enums"]["member_role"]
+          token: string
+          trip_id: string
+          uses: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          max_uses?: number | null
+          role?: Database["public"]["Enums"]["member_role"]
+          token?: string
+          trip_id: string
+          uses?: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          max_uses?: number | null
+          role?: Database["public"]["Enums"]["member_role"]
+          token?: string
+          trip_id?: string
+          uses?: number
+        }
+        Relationships: []
       }
       trips: {
         Row: {
           created_at: string
+          created_by: string | null
           day_index: number
           end_date: string | null
           id: string
+          invite_code: string | null
           name: string
           organizer_user_id: string | null
           per_head_amount: number
@@ -378,9 +355,11 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           day_index?: number
           end_date?: string | null
           id?: string
+          invite_code?: string | null
           name: string
           organizer_user_id?: string | null
           per_head_amount?: number
@@ -389,9 +368,11 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           day_index?: number
           end_date?: string | null
           id?: string
+          invite_code?: string | null
           name?: string
           organizer_user_id?: string | null
           per_head_amount?: number
@@ -409,22 +390,7 @@ export type Database = {
           splits: number | null
           trip_id: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "members_trip_id_fkey"
-            columns: ["trip_id"]
-            isOneToOne: false
-            referencedRelation: "trip_money_summary"
-            referencedColumns: ["trip_id"]
-          },
-          {
-            foreignKeyName: "members_trip_id_fkey"
-            columns: ["trip_id"]
-            isOneToOne: false
-            referencedRelation: "trips"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       trip_money_summary: {
         Row: {
@@ -435,32 +401,45 @@ export type Database = {
           spent: number | null
           trip_id: string | null
         }
-        Insert: {
-          collected?: never
-          expected?: never
-          member_count?: never
-          per_head_amount?: number | null
-          spent?: never
-          trip_id?: string | null
-        }
-        Update: {
-          collected?: never
-          expected?: never
-          member_count?: never
-          per_head_amount?: number | null
-          spent?: never
-          trip_id?: string | null
-        }
         Relationships: []
       }
     }
     Functions: {
-      [_ in never]: never
+      create_trip: {
+        Args: {
+          p_full_name?: string
+          p_name: string
+          p_nickname?: string
+          p_per_head?: number
+        }
+        Returns: string
+      }
+      invite_info: {
+        Args: { p_token: string }
+        Returns: {
+          invite_role: Database["public"]["Enums"]["member_role"]
+          trip_id: string
+          trip_name: string
+          valid: boolean
+        }[]
+      }
+      join_trip: {
+        Args: { p_full_name?: string; p_nickname?: string; p_token: string }
+        Returns: string
+      }
+      set_member_role: {
+        Args: {
+          p_member_id: string
+          p_role: Database["public"]["Enums"]["member_role"]
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       device_type: "iPhone" | "Android"
       expense_category: "stay" | "food" | "travel" | "activities" | "misc"
       log_kind: "expense" | "edit" | "payment"
+      member_role: "route_head" | "assistant" | "member"
       quality_label: "4K" | "HQ"
       stop_state: "done" | "current" | "upcoming"
     }
@@ -593,6 +572,7 @@ export const Constants = {
       device_type: ["iPhone", "Android"],
       expense_category: ["stay", "food", "travel", "activities", "misc"],
       log_kind: ["expense", "edit", "payment"],
+      member_role: ["route_head", "assistant", "member"],
       quality_label: ["4K", "HQ"],
       stop_state: ["done", "current", "upcoming"],
     },
