@@ -10,6 +10,7 @@ import App from './App.tsx'
 import { ThemeProvider } from './providers/ThemeProvider.tsx'
 import { UIProvider } from './providers/UIProvider.tsx'
 import { AuthProvider } from './providers/AuthProvider.tsx'
+import { TripProvider } from './providers/TripProvider.tsx'
 import { AuthGate } from './components/AuthGate.tsx'
 
 registerSW({ immediate: true })
@@ -26,11 +27,13 @@ createRoot(document.getElementById('root')!).render(
       <ThemeProvider>
         <AuthProvider>
           <AuthGate>
-            <UIProvider>
-              <BrowserRouter>
-                <App />
-              </BrowserRouter>
-            </UIProvider>
+            <TripProvider>
+              <UIProvider>
+                <BrowserRouter>
+                  <App />
+                </BrowserRouter>
+              </UIProvider>
+            </TripProvider>
           </AuthGate>
         </AuthProvider>
       </ThemeProvider>

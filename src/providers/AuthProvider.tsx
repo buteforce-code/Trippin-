@@ -5,6 +5,8 @@ import { isSupabaseConfigured, supabase } from '../lib/supabase'
 interface AuthContextValue {
   session: Session | null
   loading: boolean
+  /** Starts the Google OAuth redirect flow; returns back to the app origin. */
+  signInWithGoogle: () => Promise<{ error: string | null }>
   /** Emails a 6-digit sign-in code (immune to link-prefetch scanners). */
   sendCode: (email: string) => Promise<{ error: string | null }>
   /** Verifies the 6-digit code and establishes the session in-app (no redirect). */
@@ -48,6 +50,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       session,
       loading,
+      signInWithGoogle: async () => {
+        if (!supabase) return { error: 'Supabase is not configured.' }
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: { redirectTo: window.location.origin },
+        })
+        return { error: readableAuthError(error?.message) }
+      },
       sendCode: async (email: string) => {
         if (!supabase) return { error: 'Supabase is not configured.' }
         // No emailRedirectTo: this is a code flow, there is no link to click.

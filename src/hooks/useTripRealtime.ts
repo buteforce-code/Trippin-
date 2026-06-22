@@ -12,6 +12,7 @@ export function useTripRealtime() {
   useEffect(() => {
     const client = supabase
     if (!client) return
+    // Prefix match: invalidates every trip-scoped snapshot regardless of trip id.
     const invalidate = () => qc.invalidateQueries({ queryKey: ['trip', 'snapshot'] })
 
     const channel = client

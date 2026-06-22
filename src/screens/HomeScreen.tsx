@@ -19,9 +19,14 @@ export function HomeScreen() {
   const categories = computeCategoryBreakdown(data.expenses)
   const av = (n: number) => n * t
 
+  // The signed-in member is tagged with a "(you)" suffix in the snapshot.
+  const youMember = data.members.find((m) => m.name.includes('(you)'))
+  const youName = youMember ? youMember.name.replace(' (you)', '') : undefined
+  const youInitial = youMember?.initials
+
   return (
     <div>
-      <HomeHeader />
+      <HomeHeader youName={youName} youInitial={youInitial} />
       <HeroBalance
         remainingStr={fmt(av(summary.remaining))}
         collectedStr={fmt(av(summary.collected))}

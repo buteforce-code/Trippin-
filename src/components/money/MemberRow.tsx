@@ -7,6 +7,8 @@ interface MemberRowProps {
   member: Member
   perHeadFee: number
   onRecord: () => void
+  /** Whether the viewer may record payments (route_head + assistant). */
+  canRecord?: boolean
 }
 
 interface MemberView {
@@ -40,7 +42,7 @@ function buildView(m: Member, fee: number): MemberView {
   }
 }
 
-export function MemberRow({ member, perHeadFee, onRecord }: MemberRowProps) {
+export function MemberRow({ member, perHeadFee, onRecord, canRecord = true }: MemberRowProps) {
   const v = buildView(member, perHeadFee)
 
   return (
@@ -58,7 +60,7 @@ export function MemberRow({ member, perHeadFee, onRecord }: MemberRowProps) {
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 7, flex: 'none' }}>
         <span style={{ fontSize: 10.5, fontWeight: 800, padding: '5px 10px', borderRadius: 20, background: v.badgeBg, color: v.badgeColor, whiteSpace: 'nowrap' }}>{v.status}</span>
-        {v.canRecord && (
+        {v.canRecord && canRecord && (
           <button
             type="button"
             onClick={onRecord}

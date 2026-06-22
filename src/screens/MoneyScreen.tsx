@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTripSnapshot } from '../hooks/queries'
 import { useUI } from '../providers/UIProvider'
+import { useTrip } from '../providers/TripProvider'
 import { useCountUp } from '../hooks/useCountUp'
 import { computeMoneySummary, fmt } from '../lib/money'
 import { MemberRow } from '../components/money/MemberRow'
@@ -24,6 +25,7 @@ const EXPENSE_FILTERS: FilterChip[] = [
 export function MoneyScreen() {
   const { data } = useTripSnapshot()
   const { openRecordSheet } = useUI()
+  const { canEditMoney, myRole } = useTrip()
   const t = useCountUp()
   const [searchParams, setSearchParams] = useSearchParams()
   const tab: MoneyTab = searchParams.get('tab') === 'out' ? 'out' : 'in'
@@ -82,9 +84,15 @@ export function MoneyScreen() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginTop: 12, background: 'var(--tint)', borderRadius: 14, padding: '11px 13px' }}>
-            <span style={{ fontSize: 16 }}>⚡</span>
+            <span style={{ fontSize: 16 }}>{canEditMoney ? '⚡' : '👀'}</span>
             <div style={{ fontSize: 11.5, fontWeight: 600, lineHeight: 1.35, color: 'var(--ink)' }}>
-              You're the <b>Route Head</b> — record split payments &amp; edit the pool anytime. Every change is logged.
+              {myRole === 'route_head' ? (
+                <>You're the <b>Route Head</b> — record split payments &amp; edit the pool anytime. Every change is logged.</>
+              ) : myRole === 'assistant' ? (
+                <>You're an <b>Assistant</b> — you can record split payments &amp; add expenses. Every change is logged.</>
+              ) : (
+                <>You have a <b>read-only</b> view of the pool. Only the Route Head &amp; assistants can record payments.</>
+              )}
             </div>
           </div>
 
@@ -95,6 +103,7 @@ export function MoneyScreen() {
                 key={i}
                 member={m}
                 perHeadFee={data.perHeadFee}
+                canRecord={canEditMoney}
                 onRecord={() =>
                   openRecordSheet({
                     memberIndex: i,

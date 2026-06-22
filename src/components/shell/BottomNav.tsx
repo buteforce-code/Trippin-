@@ -1,6 +1,7 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { useUI } from '../../providers/UIProvider'
+import { useTrip } from '../../providers/TripProvider'
 import styles from './BottomNav.module.css'
 
 const ACTIVE = 'var(--primary-d)'
@@ -52,6 +53,7 @@ export function BottomNav() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const { openAddSheet } = useUI()
+  const { canEditMoney } = useTrip()
 
   const renderTab = ({ path, label, icon }: TabDef) => {
     const active = pathname === path
@@ -75,11 +77,15 @@ export function BottomNav() {
     <nav className={styles.nav} aria-label="Primary">
       {LEFT_TABS.map(renderTab)}
       <div className={styles.centerSlot}>
-        <button type="button" onClick={openAddSheet} className={styles.addBtn} aria-label="Add expense">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-        </button>
+        {/* Add expense is an edit affordance — route_head + assistant only.
+            Members keep the layout (spacer) but see read-only money. */}
+        {canEditMoney && (
+          <button type="button" onClick={openAddSheet} className={styles.addBtn} aria-label="Add expense">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+          </button>
+        )}
       </div>
       {RIGHT_TABS.map(renderTab)}
     </nav>

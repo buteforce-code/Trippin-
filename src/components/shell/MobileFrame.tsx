@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import { Outlet } from 'react-router-dom'
 import { useTheme } from '../../providers/ThemeProvider'
 import { useUI } from '../../providers/UIProvider'
+import { useTrip } from '../../providers/TripProvider'
 import { useTripRealtime } from '../../hooks/useTripRealtime'
 import { BottomNav } from './BottomNav'
 import { AddExpenseSheet } from '../sheets/AddExpenseSheet'
@@ -12,6 +13,7 @@ import styles from './MobileFrame.module.css'
 export function MobileFrame() {
   const { theme } = useTheme()
   const { addSheetOpen, logSheetOpen, recordTarget } = useUI()
+  const { canEditMoney } = useTrip()
   useTripRealtime()
 
   return (
@@ -30,9 +32,10 @@ export function MobileFrame() {
           </Suspense>
         </div>
 
-        {addSheetOpen && <AddExpenseSheet />}
+        {/* Money-editing sheets are gated to route_head + assistant; the log is read-only for all. */}
+        {addSheetOpen && canEditMoney && <AddExpenseSheet />}
         {logSheetOpen && <ActivityLogSheet />}
-        {recordTarget && <RecordPaymentSheet target={recordTarget} />}
+        {recordTarget && canEditMoney && <RecordPaymentSheet target={recordTarget} />}
 
         <BottomNav />
       </div>

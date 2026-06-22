@@ -7,6 +7,94 @@ export type ThemeName = 'lagoon' | 'sunset' | 'palm'
 export type Device = 'iPhone' | 'Android'
 export type QualityLabel = '4K' | 'HQ'
 
+/** The current user's permission level inside a single trip. */
+export type MemberRole = 'route_head' | 'assistant' | 'member'
+
+/** A trip the signed-in user belongs to, plus that user's role in it. */
+export interface TripListItem {
+  id: string
+  name: string
+  perHeadAmount: number
+  /** The signed-in user's role for this trip. */
+  myRole: MemberRole
+  /** Whether the signed-in user has finished onboarding (set a nickname) for this trip. */
+  myOnboardingComplete: boolean
+}
+
+/** Detailed member row (multi-trip / roster / onboarding aware). */
+export interface MemberDetail {
+  id: string
+  userId: string | null
+  name: string
+  initials: string
+  color: string
+  role: MemberRole
+  isOrganizer: boolean
+  fullName: string | null
+  nickname: string | null
+  priorContributionNote: string | null
+  sortOrder: number
+  email: string | null
+}
+
+export interface Announcement {
+  id: string
+  authorName: string
+  body: string
+  pinned: boolean
+  createdAt: string
+}
+
+export interface TripInvite {
+  id: string
+  token: string
+  role: MemberRole
+  expiresAt: string | null
+  maxUses: number | null
+  uses: number
+  active: boolean
+}
+
+/** Result of resolving an invite token (before joining). */
+export interface InviteInfo {
+  tripId: string
+  tripName: string
+  inviteRole: MemberRole
+  valid: boolean
+}
+
+export interface CreateTripInput {
+  name: string
+  perHead?: number
+  fullName?: string
+  nickname?: string
+}
+
+export interface JoinTripInput {
+  token: string
+  fullName?: string
+  nickname?: string
+}
+
+/** The fields a member may edit on their OWN member row. */
+export interface OnboardingInput {
+  tripId: string
+  fullName?: string | null
+  nickname?: string | null
+  priorContributionNote?: string | null
+}
+
+export interface PostAnnouncementInput {
+  body: string
+  pinned?: boolean
+}
+
+export interface CreateInviteInput {
+  role?: MemberRole
+  maxUses?: number | null
+  expiresAt?: string | null
+}
+
 export interface Member {
   name: string
   initials: string
