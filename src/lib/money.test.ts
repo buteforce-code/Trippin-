@@ -6,18 +6,35 @@ import {
   fmt,
   short,
 } from './money'
-const PER_HEAD_FEE = 5000;
-const SEED_MEMBERS: any[] = [
-  { paid: 5000 }, { paid: 5000 }, { paid: 5000 }, { paid: 5000 }, { paid: 5000 },
-  { paid: 2500 }, { paid: 2500 },
-  { paid: 0 }
-];
-const SEED_EXPENSES: any[] = [
-  { cat: 'stay', amount: 12500 },
-  { cat: 'food', amount: 4500 },
-  { cat: 'travel', amount: 3200 },
-  { cat: 'activities', amount: 1200 }
-];
+import type { CategoryKey, Expense, Member } from '../data/types'
+
+const PER_HEAD_FEE = 5000
+
+const member = (paid: number): Member => ({
+  name: 'M',
+  initials: 'M',
+  color: '#000',
+  paid,
+  splits: paid > 0 ? 1 : 0,
+})
+const expense = (cat: CategoryKey, amount: number): Expense => ({
+  id: cat,
+  title: cat,
+  cat,
+  payer: 'x',
+  date: 'Jun 1',
+  amount,
+  createdAt: '2026-06-18T09:00:00Z',
+})
+
+// 5 fully paid (₹5,000), 2 partial (₹2,500), 1 pending — same headline math as the seed.
+const SEED_MEMBERS: Member[] = [5000, 5000, 5000, 5000, 5000, 2500, 2500, 0].map(member)
+const SEED_EXPENSES: Expense[] = [
+  expense('stay', 12500),
+  expense('food', 4500),
+  expense('travel', 3200),
+  expense('activities', 1200),
+]
 describe('fmt', () => {
   it('formats whole rupees with en-IN grouping', () => {
     expect(fmt(30000)).toBe('₹30,000')

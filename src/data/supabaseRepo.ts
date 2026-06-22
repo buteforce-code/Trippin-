@@ -146,7 +146,7 @@ export class SupabaseTripRepository implements TripRepository {
     const tripId = data as string
 
     if (startDate || endDate) {
-      const patch: any = {}
+      const patch: { start_date?: string; end_date?: string } = {}
       if (startDate) patch.start_date = startDate
       if (endDate) patch.end_date = endDate
       await this.client.from('trips').update(patch).eq('id', tripId)

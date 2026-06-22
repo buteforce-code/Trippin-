@@ -38,10 +38,9 @@ export function CameraCapture({ onClose, stopKey }: CameraCaptureProps) {
   const streamRef = useRef<MediaStream | null>(null)
   const fallbackInputRef = useRef<HTMLInputElement>(null)
   const [facing, setFacing] = useState<FacingMode>('environment')
-  const [status, setStatus] = useState<Status>('starting')
-
   const supportsGetUserMedia =
     typeof navigator !== 'undefined' && Boolean(navigator.mediaDevices?.getUserMedia)
+  const [status, setStatus] = useState<Status>(supportsGetUserMedia ? 'starting' : 'unsupported')
 
   /** Stop every track so the OS camera indicator turns off immediately. */
   const stopStream = useCallback(() => {
@@ -55,10 +54,8 @@ export function CameraCapture({ onClose, stopKey }: CameraCaptureProps) {
 
   // (Re)acquire the stream whenever the facing mode changes while live.
   useEffect(() => {
-    if (!supportsGetUserMedia) {
-      setStatus('unsupported')
-      return
-    }
+    // `status` already initialises to 'unsupported' when getUserMedia is absent.
+    if (!supportsGetUserMedia) return
 
     let cancelled = false
 
