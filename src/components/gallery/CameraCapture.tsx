@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useUploadMedia } from '../../hooks/queries'
 import focus from '../ui/focus.module.css'
 
@@ -204,7 +205,10 @@ export function CameraCapture({ onClose, stopKey }: CameraCaptureProps) {
   const showFallback = status === 'denied' || status === 'unsupported'
   const isFront = facing === 'user'
 
-  return (
+  // Portal to <body> so the overlay escapes the MobileFrame shell. Rendered
+  // inside the scroll container it would be trapped under the bottom nav's
+  // stacking context (.scroll z-index 1 < .nav z-index 30), hiding the shutter.
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
@@ -624,6 +628,7 @@ export function CameraCapture({ onClose, stopKey }: CameraCaptureProps) {
           </div>
         </div>
       )}
-    </div>
+    </div>,
+    document.body,
   )
 }

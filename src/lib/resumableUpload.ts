@@ -40,7 +40,17 @@ export async function resumableUpload(params: ResumableParams): Promise<void> {
         cacheControl: '3600',
       },
       chunkSize: 6 * 1024 * 1024, // Supabase requires a 6MB chunk size for resumable uploads.
-      onError: reject,
+      onError: (error) => {
+        // Turn the raw TUS "413 Maximum size exceeded" into something a traveller
+        // can act on. The project's global upload cap (≈50 MB on the free plan)
+        // rejects oversized originals — usually long 4K videos.
+        const msg = error instanceof Error ? error.message : String(error)
+        if (/\b413\b|maximum size exceeded|payload too large/i.test(msg)) {
+          reject(new Error('This file is too large to upload (limit ≈50 MB). Try a shorter video or a smaller photo.'))
+          return
+        }
+        reject(error instanceof Error ? error : new Error(msg))
+      },
       onProgress: (sent, total) => params.onProgress?.(total ? Math.round((sent / total) * 100) : 0),
       onSuccess: () => resolve(),
     })
