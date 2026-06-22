@@ -6,8 +6,18 @@ import {
   fmt,
   short,
 } from './money'
-import { PER_HEAD_FEE, SEED_EXPENSES, SEED_MEMBERS } from '../data/fixtures'
-
+const PER_HEAD_FEE = 5000;
+const SEED_MEMBERS: any[] = [
+  { paid: 5000 }, { paid: 5000 }, { paid: 5000 }, { paid: 5000 }, { paid: 5000 },
+  { paid: 2500 }, { paid: 2500 },
+  { paid: 0 }
+];
+const SEED_EXPENSES: any[] = [
+  { cat: 'stay', amount: 12500 },
+  { cat: 'food', amount: 4500 },
+  { cat: 'travel', amount: 3200 },
+  { cat: 'activities', amount: 1200 }
+];
 describe('fmt', () => {
   it('formats whole rupees with en-IN grouping', () => {
     expect(fmt(30000)).toBe('₹30,000')
