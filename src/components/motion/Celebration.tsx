@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 /**
  * Reusable, self-contained celebration overlay. Renders a tropical confetti
@@ -57,21 +57,21 @@ export function Celebration({
   durationMs = DEFAULT_DURATION_MS,
   pieces = DEFAULT_PIECES,
 }: CelebrationProps) {
-  const [active, setActive] = useState(false)
-  // Bump on each run to remount pieces (restarts the CSS animations cleanly).
+  // 0 = idle; each play is a new instance number (also used as the remount key
+  // so the CSS animations restart cleanly on replay).
   const [cycle, setCycle] = useState(0)
 
   useEffect(() => {
     if (!run) return
-    setActive(true)
+    // Intentional one-shot: start the burst when `run` flips true, auto-hide after the lifetime.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCycle((c) => c + 1)
-    const timer = window.setTimeout(() => setActive(false), durationMs)
+    const timer = window.setTimeout(() => setCycle(0), durationMs)
     return () => window.clearTimeout(timer)
   }, [run, durationMs])
 
-  const confetti = useMemo(() => buildPieces(pieces), [pieces, cycle])
-
-  if (!active) return null
+  if (cycle === 0) return null
+  const confetti = buildPieces(pieces)
 
   return (
     <div
