@@ -36,7 +36,7 @@ export function OnboardingScreen() {
         priorContributionNote: priorNote.trim() || null,
       })
       refetchTrips()
-      navigate('/', { replace: true })
+      navigate('/home', { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't save your details. Try again.")
       setStatus('error')

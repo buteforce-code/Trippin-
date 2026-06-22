@@ -6,6 +6,7 @@ import focus from '../components/ui/focus.module.css'
 import { ROLE_BADGE } from '../components/members/roleBadgeStyles'
 import { MemberRoster } from '../components/members/MemberRoster'
 import { InvitePanel } from '../components/invites/InvitePanel'
+import { AccountPanel } from '../components/account/AccountPanel'
 
 const SECTION_TITLE = { fontSize: 15, fontWeight: 800, fontFamily: "'Baloo 2',sans-serif" } as const
 
@@ -20,7 +21,7 @@ export function TripsScreen() {
 
   const onSwitch = (id: string) => {
     setCurrentTripId(id)
-    navigate('/')
+    navigate('/home')
   }
 
   return (
@@ -133,6 +134,10 @@ export function TripsScreen() {
           )}
         </>
       )}
+
+      {/* Account / session controls — signed-in identity + sign out. */}
+      <div style={{ ...SECTION_TITLE, margin: '28px 2px 10px' }}>Account</div>
+      <AccountPanel />
     </div>
   )
 }

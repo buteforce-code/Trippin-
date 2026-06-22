@@ -200,6 +200,7 @@ export function CameraCapture({ onClose, stopKey }: CameraCaptureProps) {
   const isLive = status === 'live'
   const isReview = status === 'review'
   const isPosting = status === 'posting'
+  const isStarting = status === 'starting'
   const showFallback = status === 'denied' || status === 'unsupported'
   const isFront = facing === 'user'
 
@@ -319,6 +320,43 @@ export function CameraCapture({ onClose, stopKey }: CameraCaptureProps) {
         </button>
       </div>
 
+      {/* Starting overlay — keeps the screen from looking frozen while the
+          camera permission prompt resolves and the stream warms up. */}
+      {isStarting && (
+        <div
+          role="status"
+          aria-live="polite"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 2,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 14,
+            color: '#fff',
+            pointerEvents: 'none',
+          }}
+        >
+          <span
+            aria-hidden="true"
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: '50%',
+              border: '3px solid rgba(255,255,255,.3)',
+              borderTopColor: '#fff',
+              display: 'inline-block',
+              animation: 'kspin 1s linear infinite',
+            }}
+          />
+          <span style={{ fontSize: 13.5, fontWeight: 700, fontFamily: "'Baloo 2',sans-serif", opacity: 0.92 }}>
+            Starting camera…
+          </span>
+        </div>
+      )}
+
       <div style={{ flex: 1 }} />
 
       {/* Denied / unsupported message + native fallback CTA. */}
@@ -367,44 +405,48 @@ export function CameraCapture({ onClose, stopKey }: CameraCaptureProps) {
         </div>
       )}
 
-      {/* LIVE controls: flip + large shutter, lifted above the home indicator. */}
+      {/* LIVE controls: a balanced three-zone bar (spacer · shutter · flip)
+          so the big shutter stays optically centred. Generous hit targets,
+          lifted clear of the home indicator via the safe-area inset. */}
       {isLive && (
         <div
           style={{
             position: 'relative',
             zIndex: 2,
-            display: 'flex',
+            display: 'grid',
+            gridTemplateColumns: '1fr auto 1fr',
             alignItems: 'center',
-            justifyContent: 'center',
-            gap: 40,
-            paddingLeft: 22,
-            paddingRight: 22,
-            paddingTop: 22,
+            paddingLeft: 24,
+            paddingRight: 24,
+            paddingTop: 26,
             paddingBottom: SHUTTER_BOTTOM,
-            background: 'linear-gradient(transparent,rgba(0,0,0,.55))',
+            background: 'linear-gradient(transparent,rgba(0,0,0,.6))',
           }}
         >
-          {/* Spacer to keep the shutter optically centred opposite the flip button. */}
-          <div style={{ width: 52, height: 52, flex: 'none' }} aria-hidden="true" />
+          {/* Left zone — empty, balances the flip button on the right. */}
+          <div aria-hidden="true" />
 
+          {/* Centre — large shutter. */}
           <button
             type="button"
             onClick={shoot}
             aria-label="Take photo"
             className={`pressable ${focus.ringOnDark}`}
             style={{
-              width: 78,
-              height: 78,
+              justifySelf: 'center',
+              width: 82,
+              height: 82,
               borderRadius: '50%',
-              // Teal shutter ring around a white shutter.
-              border: '4px solid var(--primary)',
+              // White outer ring with a clear gap to the inner shutter disc.
+              border: '4px solid rgba(255,255,255,.95)',
               cursor: 'pointer',
-              background: 'rgba(0,0,0,.25)',
-              padding: 5,
+              background: 'transparent',
+              padding: 6,
               flex: 'none',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              boxShadow: '0 4px 18px rgba(0,0,0,.4)',
             }}
           >
             <span
@@ -415,33 +457,34 @@ export function CameraCapture({ onClose, stopKey }: CameraCaptureProps) {
                 borderRadius: '50%',
                 background: 'linear-gradient(135deg,#fff,#e9f3f1)',
                 display: 'block',
-                boxShadow: '0 2px 8px rgba(0,0,0,.25)',
               }}
             />
           </button>
 
+          {/* Right zone — flip camera, right-aligned and thumb-reachable. */}
           <button
             type="button"
             onClick={flipCamera}
             aria-label="Flip camera"
             className={`pressable ${focus.ringOnDark}`}
             style={{
-              width: 52,
-              height: 52,
+              justifySelf: 'end',
+              width: 56,
+              height: 56,
               borderRadius: '50%',
               border: 'none',
               cursor: 'pointer',
-              background: 'rgba(0,0,0,.45)',
+              background: 'rgba(255,255,255,.16)',
               color: '#fff',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               padding: 0,
               flex: 'none',
-              backdropFilter: 'blur(4px)',
+              backdropFilter: 'blur(6px)',
             }}
           >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M3 7h12a4 4 0 0 1 4 4M3 7l3-3M3 7l3 3" />
               <path d="M21 17H9a4 4 0 0 1-4-4M21 17l-3 3M21 17l-3-3" />
             </svg>

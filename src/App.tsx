@@ -1,9 +1,11 @@
-import { lazy } from 'react'
+import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { MobileFrame } from './components/shell/MobileFrame'
 import { TripGate } from './components/TripGate'
+import { BrandSplash } from './components/motion/BrandSplash'
+import { MyTripsScreen } from './screens/MyTripsScreen'
 
-// Route-level code splitting: each screen ships as its own chunk.
+// Route-level code splitting: each per-trip screen ships as its own chunk.
 const HomeScreen = lazy(() => import('./screens/HomeScreen').then((m) => ({ default: m.HomeScreen })))
 const MoneyScreen = lazy(() => import('./screens/MoneyScreen').then((m) => ({ default: m.MoneyScreen })))
 const TripScreen = lazy(() => import('./screens/TripScreen').then((m) => ({ default: m.TripScreen })))
@@ -19,30 +21,39 @@ const OnboardingScreen = lazy(() => import('./screens/OnboardingScreen').then((m
 
 function App() {
   return (
-    <Routes>
-      {/* Trip setup / first-run flows — no current trip required. */}
-      <Route path="/create-trip" element={<CreateTripScreen />} />
-      <Route path="/join" element={<JoinTripScreen />} />
-      <Route path="/join/:token" element={<JoinTripScreen />} />
-      <Route path="/onboarding" element={<OnboardingScreen />} />
+    <Suspense fallback={<BrandSplash />}>
+      <Routes>
+        {/* Post-login home: every trip the user belongs to. Eagerly imported so
+            it paints immediately after sign-in. */}
+        <Route path="/my-trips" element={<MyTripsScreen />} />
 
-      {/* The app proper — requires a current trip + completed onboarding. */}
-      <Route
-        element={
-          <TripGate>
-            <MobileFrame />
-          </TripGate>
-        }
-      >
-        <Route path="/" element={<HomeScreen />} />
-        <Route path="/money" element={<MoneyScreen />} />
-        <Route path="/trip" element={<TripScreen />} />
-        <Route path="/gallery" element={<GalleryScreen />} />
-        <Route path="/trips" element={<TripsScreen />} />
-        <Route path="/announcements" element={<AnnouncementsScreen />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Route>
-    </Routes>
+        {/* Trip setup / first-run flows — no current trip required. */}
+        <Route path="/create-trip" element={<CreateTripScreen />} />
+        <Route path="/join" element={<JoinTripScreen />} />
+        <Route path="/join/:token" element={<JoinTripScreen />} />
+        <Route path="/onboarding" element={<OnboardingScreen />} />
+
+        {/* The per-trip app — requires a current trip + completed onboarding. */}
+        <Route
+          element={
+            <TripGate>
+              <MobileFrame />
+            </TripGate>
+          }
+        >
+          <Route path="/home" element={<HomeScreen />} />
+          <Route path="/money" element={<MoneyScreen />} />
+          <Route path="/trip" element={<TripScreen />} />
+          <Route path="/gallery" element={<GalleryScreen />} />
+          <Route path="/trips" element={<TripsScreen />} />
+          <Route path="/announcements" element={<AnnouncementsScreen />} />
+        </Route>
+
+        {/* Landing + unknown routes → the My Trips home. */}
+        <Route path="/" element={<Navigate to="/my-trips" replace />} />
+        <Route path="*" element={<Navigate to="/my-trips" replace />} />
+      </Routes>
+    </Suspense>
   )
 }
 

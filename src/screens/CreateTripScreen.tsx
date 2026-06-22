@@ -41,7 +41,7 @@ export function CreateTripScreen() {
         endDate: endDate || undefined,
       })
       setCurrentTripId(newTripId)
-      navigate('/', { replace: true })
+      navigate('/home', { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't create the trip. Try again.")
       setStatus('error')
@@ -152,7 +152,7 @@ export function CreateTripScreen() {
           {hasTrips && (
             <>
               {' · '}
-              <Link to="/trips" style={{ color: 'var(--primary-d)', fontWeight: 800 }}>Your trips</Link>
+              <Link to="/my-trips" style={{ color: 'var(--primary-d)', fontWeight: 800 }}>Your trips</Link>
             </>
           )}
         </div>

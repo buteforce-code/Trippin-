@@ -38,7 +38,7 @@ export function HomeHeader({ youName = 'Traveller', youInitial = 'T' }: HomeHead
         {/* Avatar + name double as the trip switcher entry point. */}
         <button
           type="button"
-          onClick={() => navigate('/trips')}
+          onClick={() => navigate('/my-trips')}
           aria-label="Switch trip"
           className={`pressable ${focus.ring}`}
           style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 11 }}

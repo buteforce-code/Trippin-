@@ -17,6 +17,16 @@ dist-ssr
 .env.*
 !.env.example
 
+# Secrets / credentials — never commit OAuth client secrets, service keys, certs
+client_secret*.json
+*-credentials.json
+*.pem
+*.key
+
+# Agent / Claude local artifacts
+.claude/
+CLAUDE.local.md
+
 # Generated verification artifacts
 /screenshots
 

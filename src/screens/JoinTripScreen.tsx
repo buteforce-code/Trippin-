@@ -49,7 +49,7 @@ export function JoinTripScreen() {
         nickname: nickname.trim() || undefined,
       })
       setCurrentTripId(joinedTripId)
-      navigate('/', { replace: true })
+      navigate('/home', { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't join this trip. The invite may have expired.")
       setStatus('error')

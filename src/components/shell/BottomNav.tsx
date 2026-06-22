@@ -41,7 +41,7 @@ const GalleryIcon = (
 )
 
 const LEFT_TABS: TabDef[] = [
-  { path: '/', label: 'Home', icon: HomeIcon },
+  { path: '/home', label: 'Home', icon: HomeIcon },
   { path: '/money', label: 'Money', icon: MoneyIcon },
 ]
 const RIGHT_TABS: TabDef[] = [

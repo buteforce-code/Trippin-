@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import type { Session } from '@supabase/supabase-js'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 
@@ -28,6 +29,7 @@ function readableAuthError(message?: string | null): string | null {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(isSupabaseConfigured)
+  const queryClient = useQueryClient()
 
   useEffect(() => {
     // When Supabase isn't configured, `loading` already starts false (see useState above).
@@ -36,11 +38,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(data.session)
       setLoading(false)
     })
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, next) => {
       setSession(next)
+      // On sign-out, clear every cached query so the next account never sees
+      // the previous user's trips/snapshot before a fresh fetch.
+      if (event === 'SIGNED_OUT') queryClient.clear()
     })
     return () => sub.subscription.unsubscribe()
-  }, [])
+  }, [queryClient])
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -56,6 +61,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       signOut: async () => {
         await supabase?.auth.signOut()
+        // Drop the persisted current-trip pointer so the next account doesn't
+        // inherit a stale selection from the previous one. Wrapped because
+        // localStorage can throw in private-mode / locked-down browsers.
+        try {
+          localStorage.removeItem('trippin.currentTripId')
+        } catch {
+          // best-effort cleanup — ignore
+        }
       },
     }),
     [session, loading],
