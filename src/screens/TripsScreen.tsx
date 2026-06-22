@@ -11,7 +11,8 @@ const SECTION_TITLE = { fontSize: 15, fontWeight: 800, fontFamily: "'Baloo 2',sa
 
 /**
  * Trips + people hub. Lists every trip (switcher), then for the active trip
- * shows the crew roster, Route-Head role controls, and invite tools.
+ * shows the crew roster, Route-Head role controls, invite tools, and quick
+ * access links to itinerary & announcements.
  */
 export function TripsScreen() {
   const navigate = useNavigate()
@@ -84,6 +85,35 @@ export function TripsScreen() {
           style={{ flex: 1, border: '1.5px solid var(--primary)', cursor: 'pointer', fontFamily: "'Baloo 2',sans-serif", fontWeight: 800, fontSize: 14, padding: 14, borderRadius: 16, color: 'var(--primary-d)', background: 'var(--tint)' }}
         >
           Join a trip
+        </button>
+      </div>
+
+      {/* Quick-access cards for itinerary & announcements */}
+      <div style={{ ...SECTION_TITLE, margin: '26px 2px 10px' }}>Quick access</div>
+      <div style={{ display: 'flex', gap: 10 }}>
+        <button
+          type="button"
+          onClick={() => navigate('/trip')}
+          className={`pressable ${focus.ring}`}
+          style={{ flex: 1, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, background: '#fff', borderRadius: 16, padding: '14px 16px', boxShadow: '0 4px 12px rgba(11,77,74,.05)' }}
+        >
+          <span style={{ fontSize: 22 }} aria-hidden="true">🗺️</span>
+          <div style={{ textAlign: 'left' }}>
+            <div style={{ fontSize: 14, fontWeight: 800, fontFamily: "'Baloo 2',sans-serif", color: 'var(--ink)' }}>Route & Itinerary</div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: MUTED_TEXT }}>Stops, weather, map</div>
+          </div>
+        </button>
+        <button
+          type="button"
+          onClick={() => navigate('/announcements')}
+          className={`pressable ${focus.ring}`}
+          style={{ flex: 1, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, background: '#fff', borderRadius: 16, padding: '14px 16px', boxShadow: '0 4px 12px rgba(11,77,74,.05)' }}
+        >
+          <span style={{ fontSize: 22 }} aria-hidden="true">📣</span>
+          <div style={{ textAlign: 'left' }}>
+            <div style={{ fontSize: 14, fontWeight: 800, fontFamily: "'Baloo 2',sans-serif", color: 'var(--ink)' }}>Announcements</div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: MUTED_TEXT }}>Updates from Route Head</div>
+          </div>
         </button>
       </div>
 
