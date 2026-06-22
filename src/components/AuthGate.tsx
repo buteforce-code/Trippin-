@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { useAuth } from '../providers/AuthProvider'
 import { LoginScreen } from '../screens/LoginScreen'
-import { APP_NAME } from '../lib/brand'
+import { BrandSplash } from './motion/BrandSplash'
 
 /**
  * Gates the app behind auth when Supabase is configured. With no Supabase env,
@@ -14,11 +14,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
   if (!isSupabaseConfigured) return <>{children}</>
 
   if (loading) {
-    return (
-      <div className="app-bg" data-theme="lagoon" style={{ alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ fontFamily: "'Baloo 2',sans-serif", fontWeight: 800, fontSize: 24, color: 'var(--primary-d)' }}>{APP_NAME} 🌴</div>
-      </div>
-    )
+    return <BrandSplash />
   }
 
   if (!session) return <LoginScreen />

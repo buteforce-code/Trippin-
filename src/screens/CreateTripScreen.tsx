@@ -53,12 +53,12 @@ export function CreateTripScreen() {
   return (
     <div className="app-bg" data-theme="lagoon" style={{ alignItems: 'center' }}>
       <div style={screenWrap}>
-        <div style={{ marginBottom: 18 }}>
+        <div style={{ marginBottom: 18, animation: 'krise 600ms cubic-bezier(.16,1,.3,1) both' }}>
           <div style={heading}>Start a trip 🌴</div>
           <div style={subtle}>You'll be the Route Head — invite your crew, track the pool, and keep the gallery.</div>
         </div>
 
-        <form onSubmit={onSubmit} style={card}>
+        <form onSubmit={onSubmit} style={{ ...card, animation: 'krise 600ms cubic-bezier(.16,1,.3,1) 120ms both' }}>
           <label htmlFor="trip-name" style={label}>Trip name</label>
           <input
             id="trip-name"

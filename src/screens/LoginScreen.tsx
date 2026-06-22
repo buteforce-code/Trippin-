@@ -23,7 +23,7 @@ export function LoginScreen() {
     <div className="app-bg" data-theme="lagoon" style={{ alignItems: 'center' }}>
       <div style={{ width: 'min(100%, var(--frame-max))', minHeight: '100dvh', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 28px', color: 'var(--ink)' }}>
         {/* Brand hero */}
-        <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 'var(--radius-xl)', padding: '30px 26px', background: 'linear-gradient(140deg,var(--primary),var(--primary-d))', color: '#fff', boxShadow: '0 20px 40px var(--shadow)', marginBottom: 26 }}>
+        <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 'var(--radius-xl)', padding: '30px 26px', background: 'linear-gradient(140deg,var(--primary),var(--primary-d))', color: '#fff', boxShadow: '0 20px 40px var(--shadow)', marginBottom: 26, animation: 'krise 620ms cubic-bezier(.16,1,.3,1) both' }}>
           <div style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: '46%', background: 'linear-gradient(100deg,transparent,rgba(255,255,255,.22),transparent)', animation: 'kshine 5.5s ease-in-out infinite' }} aria-hidden="true" />
           <div style={{ fontSize: 13, fontWeight: 700, opacity: 0.9 }}>Namaste 🌴</div>
           <div style={{ fontSize: 38, fontWeight: 800, fontFamily: "'Baloo 2',sans-serif", lineHeight: 1.05, marginTop: 4 }}>{APP_NAME}</div>
@@ -57,6 +57,7 @@ export function LoginScreen() {
             color: 'var(--ink)',
             boxShadow: 'var(--card-shadow)',
             opacity: googleBusy ? 0.7 : 1,
+            animation: 'krise 620ms cubic-bezier(.16,1,.3,1) 140ms both',
           }}
         >
           <GoogleMark />

@@ -48,6 +48,46 @@
   100% { offset-distance: 100%; }
 }
 
+/* --- Appended motion (v2 polish) — entrances, splash & celebration. --- */
+
+/* Soft fade + rise entrance; used for staggered hero/card/button reveals. */
+@keyframes krise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Splash wordmark entrance: rise + a touch of scale settle. */
+@keyframes kwordmark {
+  0% { opacity: 0; transform: translateY(18px) scale(0.96); }
+  60% { opacity: 1; }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Sun rising into place on the splash. */
+@keyframes ksunrise {
+  0% { opacity: 0; transform: translateY(40px) scale(0.7); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Gentle breathing glow behind the splash sun. */
+@keyframes kglow {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50% { opacity: 0.9; transform: scale(1.08); }
+}
+
+/* Confetti fall: drop down the viewport while spinning. */
+@keyframes kconfetti {
+  0% { opacity: 1; transform: translateY(-12vh) rotate(0deg); }
+  100% { opacity: 0; transform: translateY(112vh) rotate(720deg); }
+}
+
+/* Sunburst burst: scale out from the centre and fade. */
+@keyframes kburst {
+  0% { opacity: 0.85; transform: scale(0.2); }
+  70% { opacity: 0.5; }
+  100% { opacity: 0; transform: scale(2.4); }
+}
+
 /* Honor reduced-motion: kill ambient/looping motion but keep layout intact. */
 @media (prefers-reduced-motion: reduce) {
   *,
