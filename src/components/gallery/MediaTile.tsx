@@ -4,6 +4,7 @@ import { useThumbUrl } from '../../hooks/queries'
 import { useDeleteMedia } from '../../hooks/useDeleteMedia'
 import { useTrip } from '../../providers/TripProvider'
 import { tripRepository } from '../../data'
+import { MediaViewer } from './MediaViewer'
 import focus from '../ui/focus.module.css'
 
 interface MediaTileProps {
@@ -33,6 +34,12 @@ export function MediaTile({ item }: MediaTileProps) {
   const [confirming, setConfirming] = useState(false)
   const isDeleting = deleteMedia.isPending
 
+  // Tap the tile to play/view inline (not while a delete confirm is showing).
+  const [viewerOpen, setViewerOpen] = useState(false)
+  const openViewer = () => {
+    if (!confirming && !isDeleting) setViewerOpen(true)
+  }
+
   const showThumb = Boolean(thumbUrl) && !imgFailed
   // Tile byline: who added the photo (falls back to its place/"Trip" for old rows).
   const byline = item.uploaderName ?? item.place
@@ -52,7 +59,17 @@ export function MediaTile({ item }: MediaTileProps) {
 
   return (
     <div
-      style={{ position: 'relative', borderRadius: 18, overflow: 'hidden', aspectRatio: item.ratio, background: `linear-gradient(150deg, ${item.c1}, ${item.c2})`, boxShadow: '0 6px 16px rgba(11,77,74,.1)' }}
+      role="button"
+      tabIndex={0}
+      onClick={openViewer}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          openViewer()
+        }
+      }}
+      aria-label={`Open ${byline}'s ${item.isVideo ? 'video' : 'photo'}`}
+      style={{ position: 'relative', borderRadius: 18, overflow: 'hidden', aspectRatio: item.ratio, background: `linear-gradient(150deg, ${item.c1}, ${item.c2})`, boxShadow: '0 6px 16px rgba(11,77,74,.1)', cursor: 'pointer' }}
     >
       {showThumb ? (
         <img
@@ -75,7 +92,10 @@ export function MediaTile({ item }: MediaTileProps) {
       {isRouteHead && (
         <button
           type="button"
-          onClick={() => setConfirming(true)}
+          onClick={(e) => {
+            e.stopPropagation()
+            setConfirming(true)
+          }}
           aria-label={`Delete photo from ${item.place}`}
           className={`pressable ${focus.ringOnDark}`}
           style={{ position: 'absolute', top: 9, right: 9, width: 27, height: 27, borderRadius: '50%', border: 'none', cursor: 'pointer', background: 'rgba(0,0,0,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, backdropFilter: 'blur(4px)' }}
@@ -113,7 +133,10 @@ export function MediaTile({ item }: MediaTileProps) {
         </div>
         <button
           type="button"
-          onClick={handleDownload}
+          onClick={(e) => {
+            e.stopPropagation()
+            void handleDownload()
+          }}
           aria-label={`Download original from ${item.place}`}
           className={focus.ringOnDark}
           style={{ width: 27, height: 27, borderRadius: '50%', border: 'none', cursor: 'pointer', background: 'rgba(255,255,255,.92)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, flex: 'none' }}
@@ -130,6 +153,7 @@ export function MediaTile({ item }: MediaTileProps) {
         <div
           role="alertdialog"
           aria-label={`Delete photo from ${item.place}?`}
+          onClick={(e) => e.stopPropagation()}
           style={{ position: 'absolute', inset: 0, zIndex: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: 12, background: 'rgba(8,18,17,.78)', backdropFilter: 'blur(3px)', animation: 'kfade .15s ease' }}
         >
           <div style={{ fontSize: 12.5, fontWeight: 800, color: '#fff', fontFamily: "'Baloo 2',sans-serif", textAlign: 'center', lineHeight: 1.25 }}>
@@ -157,6 +181,8 @@ export function MediaTile({ item }: MediaTileProps) {
           </div>
         </div>
       )}
+
+      {viewerOpen && <MediaViewer item={item} onClose={() => setViewerOpen(false)} />}
     </div>
   )
 }

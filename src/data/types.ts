@@ -167,6 +167,13 @@ export interface UploadMediaInput {
   stopKey: string | null
 }
 
+/** How to render a media original inline in the gallery viewer. */
+export interface MediaViewSource {
+  /** `image`/`video` use a signed URL; `iframe` embeds Drive's player (large video). */
+  kind: 'image' | 'video' | 'iframe'
+  url: string
+}
+
 export interface TripSnapshot {
   tripName: string
   perHeadFee: number

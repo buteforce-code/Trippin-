@@ -17,6 +17,7 @@ import type {
   InviteInfo,
   JoinTripInput,
   MediaItem,
+  MediaViewSource,
   Member,
   MemberDetail,
   MemberRole,
@@ -548,6 +549,26 @@ export class SupabaseTripRepository implements TripRepository {
       .from(ORIGINALS_BUCKET)
       .createSignedUrl(item.originalPath, 3600, { download: true })
     return data?.signedUrl ?? null
+  }
+
+  async getViewSource(item: MediaItem): Promise<MediaViewSource | null> {
+    if (!item.originalPath) return null
+    // Drive: large video streams via Drive's embeddable player (iframe); images
+    // via the lh3 content host. get-view also makes the file link-readable.
+    if (item.originalProvider === 'drive') {
+      const { data, error } = await this.client.functions.invoke('drive-media', {
+        body: { op: 'get-view', fileId: item.originalPath },
+      })
+      if (error || !data) return null
+      if (item.isVideo) return data.videoUrl ? { kind: 'iframe', url: data.videoUrl } : null
+      return data.imageUrl ? { kind: 'image', url: data.imageUrl } : null
+    }
+    // Supabase: an inline (non-download) signed URL streams in <video>/<img>.
+    const { data } = await this.client.storage
+      .from(ORIGINALS_BUCKET)
+      .createSignedUrl(item.originalPath, 3600)
+    if (!data?.signedUrl) return null
+    return { kind: item.isVideo ? 'video' : 'image', url: data.signedUrl }
   }
 
   private async log(ctx: WriteContext, kind: DB['public']['Enums']['log_kind'], detail: string): Promise<void> {

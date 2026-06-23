@@ -13,6 +13,7 @@ import type {
   InviteInfo,
   JoinTripInput,
   MediaItem,
+  MediaViewSource,
   MemberDetail,
   MemberRole,
   NewExpenseInput,
@@ -83,4 +84,7 @@ export interface TripRepository {
 
   /** Signed URL for downloading the untouched original (null when none). */
   getOriginalUrl(item: MediaItem): Promise<string | null>
+
+  /** Inline play/view source for the gallery viewer (null when none). */
+  getViewSource(item: MediaItem): Promise<MediaViewSource | null>
 }
