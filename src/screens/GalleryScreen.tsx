@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useTripSnapshot, useUploadMedia } from '../hooks/queries'
 import { useCountUp } from '../hooks/useCountUp'
 import { MediaTile } from '../components/gallery/MediaTile'
@@ -7,25 +7,37 @@ import { FilterChips, type FilterChip } from '../components/ui/FilterChips'
 import { MUTED_TEXT } from '../components/ui/a11y'
 import focus from '../components/ui/focus.module.css'
 
-const GALLERY_FILTERS: FilterChip[] = [
-  { key: 'all', label: 'All' },
-  { key: 'kochi', label: 'Kochi' },
-  { key: 'munnar', label: 'Munnar' },
-  { key: 'alleppey', label: 'Alleppey' },
-]
+const FILTER_LABEL = { fontSize: 11, fontWeight: 800, letterSpacing: '.4px', textTransform: 'uppercase', color: MUTED_TEXT, margin: '8px 2px -6px' } as const
 
 export function GalleryScreen() {
   const { data } = useTripSnapshot()
   const uploadMedia = useUploadMedia()
   const t = useCountUp()
-  const [filter, setFilter] = useState('all')
+  const [place, setPlace] = useState('all')
+  const [person, setPerson] = useState('all')
   const [error, setError] = useState<string | null>(null)
   const [cameraOpen, setCameraOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // Filter chips are derived from the media itself — locations and uploaders
+  // appear automatically as photos are added, so there's nothing hardcoded.
+  const placeChips = useMemo<FilterChip[]>(() => {
+    const set = new Set<string>()
+    for (const m of data?.media ?? []) if (m.locationTag) set.add(m.locationTag)
+    return [{ key: 'all', label: 'All places' }, ...[...set].sort().map((p) => ({ key: p, label: p }))]
+  }, [data?.media])
+
+  const personChips = useMemo<FilterChip[]>(() => {
+    const set = new Set<string>()
+    for (const m of data?.media ?? []) if (m.uploaderName) set.add(m.uploaderName)
+    return [{ key: 'all', label: 'Everyone' }, ...[...set].sort().map((p) => ({ key: p, label: p }))]
+  }, [data?.media])
+
   if (!data) return null
 
-  const visibleMedia = data.media.filter((m) => filter === 'all' || m.stop === filter)
+  const visibleMedia = data.media.filter(
+    (m) => (place === 'all' || m.locationTag === place) && (person === 'all' || m.uploaderName === person),
+  )
   const mediaCount = Math.round(data.media.length * t)
 
   const onFiles = async (fileList: FileList | null) => {
@@ -33,7 +45,8 @@ export function GalleryScreen() {
     if (!files.length) return
     setError(null)
     try {
-      await uploadMedia.mutateAsync({ files, stopKey: filter === 'all' ? null : filter })
+      // Location is auto-tagged from each file's GPS / device location.
+      await uploadMedia.mutateAsync({ files, stopKey: null })
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Upload failed')
     } finally {
@@ -81,7 +94,21 @@ export function GalleryScreen() {
         )}
       </div>
 
-      <FilterChips chips={GALLERY_FILTERS} active={filter} onSelect={setFilter} activeBg="var(--primary)" />
+      {/* Auto location filter — only shown once at least one place exists. */}
+      {placeChips.length > 1 && (
+        <>
+          <div style={FILTER_LABEL}>Places</div>
+          <FilterChips chips={placeChips} active={place} onSelect={setPlace} activeBg="var(--primary)" />
+        </>
+      )}
+
+      {/* Auto uploader filter — only shown once more than one person has posted. */}
+      {personChips.length > 2 && (
+        <>
+          <div style={FILTER_LABEL}>Added by</div>
+          <FilterChips chips={personChips} active={person} onSelect={setPerson} activeBg="var(--accent)" />
+        </>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 11 }}>
         <button
@@ -110,7 +137,7 @@ export function GalleryScreen() {
       </div>
 
       {cameraOpen && (
-        <CameraCapture onClose={() => setCameraOpen(false)} stopKey={filter === 'all' ? null : filter} />
+        <CameraCapture onClose={() => setCameraOpen(false)} stopKey={null} />
       )}
     </div>
   )

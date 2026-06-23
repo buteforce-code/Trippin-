@@ -151,7 +151,14 @@ export interface MediaItem {
   c2: string
   /** Storage object paths (null for seed placeholders). */
   thumbPath: string | null
+  /** For supabase: the Storage object path. For drive: the Google Drive file id. */
   originalPath: string | null
+  /** Where the original lives: Supabase Storage (<10MB) or Google Drive (>=10MB). */
+  originalProvider: 'supabase' | 'drive'
+  /** Display name of the member who uploaded this (null = unknown/seed). */
+  uploaderName: string | null
+  /** Reverse-geocoded place ("Kochi") used for auto location filters (null = none). */
+  locationTag: string | null
 }
 
 export interface UploadMediaInput {

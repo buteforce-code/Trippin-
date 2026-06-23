@@ -151,6 +151,8 @@ export type Database = {
           height: number | null
           id: string
           is_video: boolean
+          location_tag: string | null
+          original_provider: string
           place: string
           quality_label: Database["public"]["Enums"]["quality_label"]
           ratio: string
@@ -170,6 +172,8 @@ export type Database = {
           height?: number | null
           id?: string
           is_video?: boolean
+          location_tag?: string | null
+          original_provider?: string
           place: string
           quality_label: Database["public"]["Enums"]["quality_label"]
           ratio?: string
@@ -189,6 +193,8 @@ export type Database = {
           height?: number | null
           id?: string
           is_video?: boolean
+          location_tag?: string | null
+          original_provider?: string
           place?: string
           quality_label?: Database["public"]["Enums"]["quality_label"]
           ratio?: string

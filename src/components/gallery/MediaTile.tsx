@@ -34,6 +34,8 @@ export function MediaTile({ item }: MediaTileProps) {
   const isDeleting = deleteMedia.isPending
 
   const showThumb = Boolean(thumbUrl) && !imgFailed
+  // Tile byline: who added the photo (falls back to its place/"Trip" for old rows).
+  const byline = item.uploaderName ?? item.place
 
   const handleDownload = async () => {
     const url = await tripRepository.getOriginalUrl(item)
@@ -95,7 +97,20 @@ export function MediaTile({ item }: MediaTileProps) {
       )}
 
       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '18px 11px 9px', background: 'linear-gradient(transparent,rgba(0,0,0,.5))', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 6 }}>
-        <span style={{ fontSize: 11, fontWeight: 800, color: '#fff', fontFamily: "'Baloo 2',sans-serif", whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>{item.place}</span>
+        <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
+          <span style={{ fontSize: 11.5, fontWeight: 800, color: '#fff', fontFamily: "'Baloo 2',sans-serif", whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {byline}
+          </span>
+          {item.locationTag && (
+            <span style={{ fontSize: 9.5, fontWeight: 700, color: 'rgba(255,255,255,.85)', display: 'flex', alignItems: 'center', gap: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }} aria-hidden="true">
+                <path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z" />
+                <circle cx="12" cy="10" r="2.4" />
+              </svg>
+              {item.locationTag}
+            </span>
+          )}
+        </div>
         <button
           type="button"
           onClick={handleDownload}

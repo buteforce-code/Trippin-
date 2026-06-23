@@ -41,9 +41,25 @@ import {
   readDimensions,
 } from '../lib/media'
 import { resumableUpload } from '../lib/resumableUpload'
+import { resolveLocationTag } from '../lib/geo'
 
 const ORIGINALS_BUCKET = 'media-originals'
 const THUMBS_BUCKET = 'media-thumbnails'
+/** Originals at/above this size go to Google Drive; smaller ones stay on Supabase. */
+const LARGE_FILE_THRESHOLD = 10 * 1024 * 1024 // 10 MB
+
+/** PUT a file's bytes to a Drive resumable session URI; returns the new file id. */
+async function drivePutOriginal(uploadUrl: string, file: File): Promise<string> {
+  const resp = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': file.type || 'application/octet-stream' },
+    body: file,
+  })
+  if (!resp.ok) throw new Error(`Drive upload failed (${resp.status})`)
+  const data = await resp.json()
+  if (!data?.id) throw new Error('Drive upload returned no file id')
+  return data.id as string
+}
 
 type DB = Database
 type MemberRow = DB['public']['Tables']['members']['Row']
@@ -222,6 +238,11 @@ export class SupabaseTripRepository implements TripRepository {
       }
     })
 
+    // Map uploader user_id → member display name, for the gallery's "added by".
+    const uploaderByUserId = new Map<string, string>(
+      memberRows.filter((m) => m.user_id).map((m) => [m.user_id as string, m.name]),
+    )
+
     // Cache everything writes need (display order, clean names, current paid).
     const youRow = memberRows.find((m) => userId != null && m.user_id === userId)
     this.ctxByTrip.set(trip.id, {
@@ -278,6 +299,9 @@ export class SupabaseTripRepository implements TripRepository {
         c2: m.c2 ?? '#2e9e6e',
         thumbPath: m.storage_path_thumb,
         originalPath: m.storage_path_original,
+        originalProvider: m.original_provider === 'drive' ? 'drive' : 'supabase',
+        uploaderName: m.uploader_user_id ? uploaderByUserId.get(m.uploader_user_id) ?? null : null,
+        locationTag: m.location_tag,
       })),
     }
   }
@@ -375,18 +399,39 @@ export class SupabaseTripRepository implements TripRepository {
     for (const file of files) {
       const dims = await readDimensions(file).catch(() => ({ width: 0, height: 0, isVideo: file.type.startsWith('video/') }))
       const mediaId = crypto.randomUUID()
-      const originalPath = `${ctx.tripId}/${mediaId}/original.${fileExtension(file)}`
       const thumbPath = `${ctx.tripId}/${mediaId}/thumb.jpg`
 
-      // 1) Original — untouched, resumable.
-      await resumableUpload({
-        bucket: ORIGINALS_BUCKET,
-        objectName: originalPath,
-        file,
-        contentType: file.type || 'application/octet-stream',
-      })
+      // Location tag — every upload (incl. in-app Instants) gets one when possible:
+      // photo EXIF GPS first, else the device's current location. Best-effort.
+      const locationTag = await resolveLocationTag(file).catch(() => null)
 
-      // 2) Thumbnail — small, separate object. Skipped if the browser can't decode the source.
+      // 1) Original — untouched. < 10 MB → Supabase Storage; ≥ 10 MB → Google Drive
+      //    (free 15 GB, no per-file cap), so we pool both free tiers.
+      let originalProvider: 'supabase' | 'drive'
+      let originalRef: string
+      if (file.size >= LARGE_FILE_THRESHOLD) {
+        const fileName = `${ctx.tripId}__${mediaId}__original.${fileExtension(file)}`
+        const { data: session, error: sessErr } = await this.client.functions.invoke('drive-media', {
+          body: { op: 'create-upload', fileName, contentType: file.type || 'application/octet-stream', sizeBytes: file.size },
+        })
+        if (sessErr || !session?.uploadUrl) {
+          throw new Error(sessErr?.message ?? 'Could not start the Drive upload for this large file.')
+        }
+        originalRef = await drivePutOriginal(session.uploadUrl, file)
+        originalProvider = 'drive'
+      } else {
+        const originalPath = `${ctx.tripId}/${mediaId}/original.${fileExtension(file)}`
+        await resumableUpload({
+          bucket: ORIGINALS_BUCKET,
+          objectName: originalPath,
+          file,
+          contentType: file.type || 'application/octet-stream',
+        })
+        originalRef = originalPath
+        originalProvider = 'supabase'
+      }
+
+      // 2) Thumbnail — always on Supabase (tiny, keeps the grid fast + RLS-gated).
       let storedThumb: string | null = null
       const thumb = await generateThumbnail(file, dims).catch(() => null)
       if (thumb) {
@@ -400,13 +445,15 @@ export class SupabaseTripRepository implements TripRepository {
       const { error: rowErr } = await this.client.from('media').insert({
         trip_id: ctx.tripId,
         stop_key: stopKey,
-        place: placeFromStopKey(stopKey),
+        place: locationTag ?? placeFromStopKey(stopKey),
+        location_tag: locationTag,
         uploader_user_id: ctx.userId,
         device,
         quality_label: classifyQuality(dims.width, dims.height),
         is_video: dims.isVideo,
         ratio: dims.width && dims.height ? `${dims.width}/${dims.height}` : '1/1',
-        storage_path_original: originalPath,
+        storage_path_original: originalRef,
+        original_provider: originalProvider,
         storage_path_thumb: storedThumb,
         width: dims.width || null,
         height: dims.height || null,
@@ -489,6 +536,14 @@ export class SupabaseTripRepository implements TripRepository {
 
   async getOriginalUrl(item: MediaItem): Promise<string | null> {
     if (!item.originalPath) return null
+    // Drive-hosted originals: ask the edge function for a viewable/download link.
+    if (item.originalProvider === 'drive') {
+      const { data, error } = await this.client.functions.invoke('drive-media', {
+        body: { op: 'get-view', fileId: item.originalPath },
+      })
+      if (error) return null
+      return data?.downloadUrl ?? data?.viewUrl ?? null
+    }
     const { data } = await this.client.storage
       .from(ORIGINALS_BUCKET)
       .createSignedUrl(item.originalPath, 3600, { download: true })
