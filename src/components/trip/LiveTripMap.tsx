@@ -3,6 +3,7 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import type { Stop, MemberDetail } from '../../data/types'
 import type { LivePosition } from '../../hooks/useLiveLocation'
+import { MUTED_TEXT } from '../ui/a11y'
 
 interface LiveTripMapProps {
   stops: Stop[]
@@ -33,24 +34,28 @@ function tween(marker: L.Marker, to: L.LatLngTuple, frames: Map<string, number>,
 
 function memberIcon(initials: string, color: string, isYou: boolean): L.DivIcon {
   return L.divIcon({
-    className: '',
-    iconSize: [36, 36],
-    iconAnchor: [18, 18],
-    html: `<div style="width:36px;height:36px;border-radius:50%;background:${color};color:#fff;
-      display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;
-      font-family:'Baloo 2',sans-serif;border:3px solid ${isYou ? '#fff' : 'rgba(255,255,255,.85)'};
-      box-shadow:0 3px 10px rgba(0,0,0,.35)${isYou ? ',0 0 0 3px var(--accent)' : ''};">${initials}</div>`,
+    className: 'live-marker',
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
+    html: `<div style="position:relative;width:40px;height:40px;">
+      <span style="position:absolute;left:50%;top:50%;width:40px;height:40px;margin:-20px 0 0 -20px;
+        border-radius:50%;background:${color};animation:livePulse 2s ease-out infinite;"></span>
+      <div style="position:absolute;inset:0;border-radius:50%;background:${color};color:#fff;
+        display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;
+        font-family:'Baloo 2',sans-serif;border:3px solid ${isYou ? '#fff' : 'rgba(255,255,255,.9)'};
+        box-shadow:0 3px 12px rgba(0,0,0,.45)${isYou ? ',0 0 0 3px var(--accent)' : ''};">${initials}</div>
+    </div>`,
   })
 }
 
 function stopIcon(label: string, isCurrent: boolean): L.DivIcon {
   const bg = isCurrent ? 'var(--accent)' : 'var(--primary-d)'
   return L.divIcon({
-    className: '',
-    iconSize: [14, 14],
-    iconAnchor: [7, 7],
-    html: `<div title="${label}" style="width:14px;height:14px;border-radius:50%;background:${bg};
-      border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3);"></div>`,
+    className: 'stop-marker',
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
+    html: `<div title="${label}" style="width:16px;height:16px;border-radius:50%;background:${bg};
+      border:3px solid #fff;box-shadow:0 2px 7px rgba(0,0,0,.35);"></div>`,
   })
 }
 
@@ -66,9 +71,13 @@ export function LiveTripMap({ stops, members, positions, youUserId }: LiveTripMa
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return
     const map = L.map(containerRef.current, { zoomControl: true, attributionControl: true })
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap',
+    // CARTO Voyager: a crisp, modern free basemap. `detectRetina` requests @2x
+    // tiles on high-DPI phones so it isn't blurry; `{r}` is the retina marker.
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      subdomains: 'abcd',
+      maxZoom: 20,
+      detectRetina: true,
+      attribution: '&copy; OpenStreetMap &copy; CARTO',
     }).addTo(map)
     map.setView(DEFAULT_CENTER, DEFAULT_ZOOM)
     stopLayerRef.current = L.layerGroup().addTo(map)
@@ -146,10 +155,25 @@ export function LiveTripMap({ stops, members, positions, youUserId }: LiveTripMa
     }
   }, [positions, members, stops, youUserId])
 
+  const hasPoints = positions.length > 0 || stops.some((s) => s.lat != null && s.lng != null)
+
   return (
-    <div
-      ref={containerRef}
-      style={{ height: 240, width: '100%', borderRadius: 18, overflow: 'hidden', boxShadow: '0 6px 16px rgba(11,77,74,.12)' }}
-    />
+    <div style={{ position: 'relative' }}>
+      <div
+        ref={containerRef}
+        style={{ height: 240, width: '100%', borderRadius: 18, overflow: 'hidden', boxShadow: '0 6px 16px rgba(11,77,74,.12)' }}
+      />
+      {!hasPoints && (
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, pointerEvents: 'none' }}>
+          <div style={{ background: 'rgba(255,255,255,.94)', borderRadius: 16, padding: '14px 18px', textAlign: 'center', boxShadow: '0 8px 22px rgba(11,77,74,.18)', maxWidth: 270 }}>
+            <div style={{ fontSize: 26 }} aria-hidden="true">🛰️</div>
+            <div style={{ fontSize: 13.5, fontWeight: 800, fontFamily: "'Baloo 2',sans-serif", color: 'var(--ink)', marginTop: 2 }}>No one on the map yet</div>
+            <div style={{ fontSize: 11.5, fontWeight: 600, color: MUTED_TEXT, marginTop: 3, lineHeight: 1.35 }}>
+              Flip on “Share my live location” below to watch your crew move in real time.
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
