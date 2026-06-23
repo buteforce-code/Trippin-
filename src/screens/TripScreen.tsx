@@ -1,10 +1,12 @@
-import { useState } from 'react'
-import { useTripSnapshot } from '../hooks/queries'
+import { useEffect, useState } from 'react'
+import { useTripSnapshot, useMembers } from '../hooks/queries'
 import { useLiveWeather } from '../hooks/useLiveWeather'
 import { useTrip } from '../providers/TripProvider'
+import { useAuth } from '../providers/AuthProvider'
 import { useItinerary } from '../hooks/useItinerary'
 import type { StopDraft } from '../hooks/useItinerary'
-import { RouteMap } from '../components/trip/RouteMap'
+import { useLiveLocations, useShareLocation } from '../hooks/useLiveLocation'
+import { LiveTripMap } from '../components/trip/LiveTripMap'
 import { StopEditorSheet } from '../components/trip/StopEditorSheet'
 import { AddDestinationButton } from '../components/trip/AddDestinationButton'
 import { ItineraryEmptyState } from '../components/trip/ItineraryEmptyState'
@@ -36,11 +38,29 @@ function timelineLineColor(state: StopState, isLast: boolean): string {
 
 const SECTION_TITLE = { fontSize: 15, fontWeight: 800, fontFamily: "'Baloo 2',sans-serif" } as const
 
+function readShare(tripId: string | null): boolean {
+  if (!tripId || typeof localStorage === 'undefined') return false
+  return localStorage.getItem(`trippin.share.${tripId}`) === '1'
+}
+
 export function TripScreen() {
   const { data } = useTripSnapshot()
   const { data: live } = useLiveWeather()
-  const { canEditMoney } = useTrip()
+  const { canEditMoney, currentTripId } = useTrip()
   const { addStop, updateStop, removeStop } = useItinerary()
+
+  // Live location: who's sharing + the signed-in user's own opt-in toggle.
+  const { data: members = [] } = useMembers(currentTripId)
+  const { data: positions = [] } = useLiveLocations(currentTripId)
+  const { session } = useAuth()
+  const youUserId = session?.user?.id ?? null
+  const [shareOn, setShareOn] = useState(() => readShare(currentTripId))
+  useEffect(() => {
+    if (!currentTripId || typeof localStorage === 'undefined') return
+    if (shareOn) localStorage.setItem(`trippin.share.${currentTripId}`, '1')
+    else localStorage.removeItem(`trippin.share.${currentTripId}`)
+  }, [currentTripId, shareOn])
+  useShareLocation(currentTripId, shareOn)
 
   const [editorTarget, setEditorTarget] = useState<EditorTarget>(null)
   const [saving, setSaving] = useState(false)
@@ -88,7 +108,8 @@ export function TripScreen() {
   return (
     <div>
       {title}
-      <RouteMap stops={stops} />
+      <LiveTripMap stops={stops} members={members} positions={positions} youUserId={youUserId} />
+      <ShareLocationRow on={shareOn} sharingCount={positions.length} onToggle={() => setShareOn((v) => !v)} />
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '18px 2px 10px' }}>
         <div style={SECTION_TITLE}>Weather forecast</div>
@@ -245,6 +266,39 @@ function ItineraryRow({ stop, isLast, canEdit, removing, onEdit, onRemove }: Iti
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+interface ShareLocationRowProps {
+  on: boolean
+  sharingCount: number
+  onToggle: () => void
+}
+
+/** Opt-in switch for broadcasting your live position to the trip map. */
+function ShareLocationRow({ on, sharingCount, onToggle }: ShareLocationRowProps) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#fff', borderRadius: 16, padding: '12px 14px', marginTop: 10, boxShadow: '0 4px 12px rgba(11,77,74,.05)' }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13.5, fontWeight: 800, fontFamily: "'Baloo 2',sans-serif", display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span aria-hidden="true">📍</span> Share my live location
+        </div>
+        <div style={{ fontSize: 11.5, fontWeight: 600, color: MUTED_TEXT, marginTop: 2 }}>
+          {sharingCount > 0 ? `${sharingCount} sharing now · updates every minute` : 'On only while the app is open'}
+        </div>
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={on}
+        aria-label="Share my live location"
+        onClick={onToggle}
+        className={focus.ring}
+        style={{ flex: 'none', width: 50, height: 30, borderRadius: 30, border: 'none', cursor: 'pointer', padding: 3, background: on ? 'var(--primary)' : '#d7e3e0', transition: 'background .2s', display: 'flex', justifyContent: on ? 'flex-end' : 'flex-start' }}
+      >
+        <span style={{ width: 24, height: 24, borderRadius: '50%', background: '#fff', boxShadow: '0 2px 5px rgba(0,0,0,.25)' }} />
+      </button>
     </div>
   )
 }
