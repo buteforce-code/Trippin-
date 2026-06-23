@@ -182,7 +182,7 @@ export function MediaTile({ item }: MediaTileProps) {
         </div>
       )}
 
-      {viewerOpen && <MediaViewer item={item} onClose={() => setViewerOpen(false)} />}
+      {viewerOpen && <MediaViewer item={item} poster={thumbUrl} onClose={() => setViewerOpen(false)} />}
     </div>
   )
 }

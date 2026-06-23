@@ -6,6 +6,8 @@ import focus from '../ui/focus.module.css'
 
 interface MediaViewerProps {
   item: MediaItem
+  /** Thumbnail URL used as the video poster so it's clearly a playable video. */
+  poster?: string | null
   onClose: () => void
 }
 
@@ -15,9 +17,10 @@ interface MediaViewerProps {
  * Drive's streaming player (iframe), Drive images use the lh3 content host.
  * Portaled to <body> so it sits above the app shell + bottom nav.
  */
-export function MediaViewer({ item, onClose }: MediaViewerProps) {
+export function MediaViewer({ item, poster, onClose }: MediaViewerProps) {
   const [src, setSrc] = useState<MediaViewSource | null>(null)
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [videoFailed, setVideoFailed] = useState(false)
 
   useEffect(() => {
     let alive = true
@@ -131,8 +134,24 @@ export function MediaViewer({ item, onClose }: MediaViewerProps) {
           {src.kind === 'image' && (
             <img src={src.url} alt={item.uploaderName ?? 'Photo'} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 10 }} />
           )}
-          {src.kind === 'video' && (
-            <video src={src.url} controls autoPlay playsInline style={{ maxWidth: '100%', maxHeight: '100%', borderRadius: 10, background: '#000' }} />
+          {src.kind === 'video' && !videoFailed && (
+            <video
+              src={src.url}
+              poster={poster ?? undefined}
+              controls
+              playsInline
+              preload="metadata"
+              onError={() => setVideoFailed(true)}
+              style={{ maxWidth: '100%', maxHeight: '100%', width: 'auto', height: 'auto', borderRadius: 10, background: '#000' }}
+            />
+          )}
+          {src.kind === 'video' && videoFailed && (
+            <div style={{ color: '#fff', textAlign: 'center', fontFamily: "'Baloo 2',sans-serif", fontWeight: 700, fontSize: 14, padding: 24 }}>
+              <div>This video couldn&apos;t play here.</div>
+              <a href={src.url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 12, color: '#fff', background: 'var(--primary)', borderRadius: 12, padding: '10px 16px', fontSize: 13, textDecoration: 'none' }}>
+                Open video
+              </a>
+            </div>
           )}
           {src.kind === 'iframe' && (
             <iframe
