@@ -22,6 +22,7 @@ import type {
   TripInvite,
   TripListItem,
   TripSnapshot,
+  UpdateExpenseInput,
   UploadMediaInput,
 } from './types'
 
@@ -55,6 +56,12 @@ export interface TripRepository {
   // ── Per-trip writes ──────────────────────────────────────────────────────
   /** Append an expense + its activity-log entry. */
   addExpense(tripId: string, input: NewExpenseInput): Promise<void>
+
+  /** Edit an existing expense + write an `edit` activity-log entry. */
+  updateExpense(tripId: string, input: UpdateExpenseInput): Promise<void>
+
+  /** Delete an expense + write an `edit` activity-log entry. */
+  deleteExpense(tripId: string, id: string, title: string, amount: number): Promise<void>
 
   /**
    * Record a contribution for a member. `amount` omitted = settle the full

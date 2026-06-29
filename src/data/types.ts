@@ -115,6 +115,8 @@ export interface Expense {
   payer: string
   date: string
   amount: number
+  /** The day the money was spent (YYYY-MM-DD). null for legacy rows → fall back to createdAt. */
+  spentOn: string | null
   /** ISO timestamp used to sort newest-first. */
   createdAt: string
 }
@@ -188,4 +190,16 @@ export interface NewExpenseInput {
   amount: number
   title: string
   cat: CategoryKey
+  /** Day the money was spent (YYYY-MM-DD). Omitted → today. */
+  spentOn?: string | null
+}
+
+/** Edit an existing expense (Route Head / Assistant). Writes an `edit` log entry. */
+export interface UpdateExpenseInput {
+  id: string
+  amount: number
+  title: string
+  cat: CategoryKey
+  /** Day the money was spent (YYYY-MM-DD). Omitted → left unchanged. */
+  spentOn?: string | null
 }

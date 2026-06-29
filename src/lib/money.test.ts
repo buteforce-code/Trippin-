@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   computeCategoryBreakdown,
+  computeDailyBreakdown,
   computeMoneySummary,
   donutSegments,
   fmt,
@@ -24,7 +25,18 @@ const expense = (cat: CategoryKey, amount: number): Expense => ({
   payer: 'x',
   date: 'Jun 1',
   amount,
+  spentOn: null,
   createdAt: '2026-06-18T09:00:00Z',
+})
+const dayExpense = (amount: number, spentOn: string | null): Expense => ({
+  id: `${spentOn}-${amount}`,
+  title: 'x',
+  cat: 'food',
+  payer: 'x',
+  date: '',
+  amount,
+  spentOn,
+  createdAt: '2026-06-18T12:00:00Z',
 })
 
 // 5 fully paid (₹5,000), 2 partial (₹2,500), 1 pending — same headline math as the seed.
@@ -69,6 +81,11 @@ describe('computeMoneySummary (seed data)', () => {
     expect(s.perHead).toBe(2675)
   })
 
+  it('splits the leftover pool per head at settle-up', () => {
+    // remaining 8,600 / 8 members = 1,075 back each
+    expect(s.settlePerHead).toBe(1075)
+  })
+
   it('counts paid / partial / pending members', () => {
     expect(s.fullyPaid).toBe(5)
     expect(s.partialCount).toBe(2)
@@ -98,6 +115,39 @@ describe('computeCategoryBreakdown (seed data)', () => {
     expect(byKey.travel.pctStr).toBe('15%')
     expect(byKey.activities.amount).toBe(1200)
     expect(byKey.activities.pctStr).toBe('6%')
+  })
+})
+
+describe('computeDailyBreakdown', () => {
+  it('groups expenses by spent-on day, oldest first, summing amounts + counts', () => {
+    const days = computeDailyBreakdown([
+      dayExpense(1000, '2026-06-19'),
+      dayExpense(500, '2026-06-19'),
+      dayExpense(2000, '2026-06-20'),
+    ])
+    expect(days.map((d) => d.dateISO)).toEqual(['2026-06-19', '2026-06-20'])
+    expect(days[0].amount).toBe(1500)
+    expect(days[0].count).toBe(2)
+    expect(days[1].amount).toBe(2000)
+  })
+
+  it('scales bar heights to the busiest day', () => {
+    const days = computeDailyBreakdown([
+      dayExpense(1500, '2026-06-19'),
+      dayExpense(2000, '2026-06-20'),
+    ])
+    expect(days[1].heightPct).toBe(1) // busiest fills the track
+    expect(days[0].heightPct).toBe(0.75)
+  })
+
+  it('falls back to the creation day when spent-on is missing', () => {
+    const days = computeDailyBreakdown([dayExpense(900, null)])
+    expect(days).toHaveLength(1)
+    expect(days[0].amount).toBe(900)
+  })
+
+  it('returns an empty array when there are no expenses', () => {
+    expect(computeDailyBreakdown([])).toEqual([])
   })
 })
 

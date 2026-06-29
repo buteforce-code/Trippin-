@@ -4,6 +4,7 @@
  */
 import type { CategoryKey, Expense, Member } from '../data/types'
 import { CATS, CATEGORY_ORDER } from './catalog'
+import { isoDate, parseISODate, shortLabelFromISO } from './time'
 
 /** "₹30,000" — rounds and formats en-IN. */
 export function fmt(n: number): string {
@@ -24,6 +25,8 @@ export interface MoneySummary {
   spent: number
   remaining: number
   perHead: number
+  /** remaining / members — what each head gets back (+) or still owes (−) at settle-up. */
+  settlePerHead: number
   /** collected / expected, clamped to [0, 1+] (raw ratio). */
   progressPct: number
   fullyPaid: number
@@ -47,6 +50,7 @@ export function computeMoneySummary(
   const pending = expected - collected
   const remaining = collected - spent
   const perHead = totalMembers ? spent / totalMembers : 0
+  const settlePerHead = totalMembers ? remaining / totalMembers : 0
   const progressPct = expected ? collected / expected : 0
 
   return {
@@ -56,6 +60,7 @@ export function computeMoneySummary(
     spent,
     remaining,
     perHead,
+    settlePerHead,
     progressPct,
     fullyPaid,
     partialCount,
@@ -105,4 +110,54 @@ export function donutSegments(slices: readonly CategorySlice[], t: number): stri
   })
   segs.push(`transparent ${acc}deg 360deg`)
   return segs.join(',')
+}
+
+/** The day an expense is bucketed under: its spent-on date, else its creation day. */
+export function expenseDayISO(e: Expense): string {
+  return e.spentOn ?? isoDate(new Date(e.createdAt))
+}
+
+export interface DaySlice {
+  /** YYYY-MM-DD bucket key. */
+  dateISO: string
+  /** "Jun 19" short label. */
+  label: string
+  /** "Thu" — short weekday. */
+  weekday: string
+  amount: number
+  amountStr: string
+  /** number of expenses logged that day. */
+  count: number
+  /** bar height as a fraction of the busiest day, 0..1. */
+  heightPct: number
+}
+
+/**
+ * Group expenses by the day they were spent, oldest→newest, for the calendar
+ * bar chart. Heights are scaled to the busiest day so the tallest bar fills.
+ */
+export function computeDailyBreakdown(expenses: readonly Expense[]): DaySlice[] {
+  const byDay = new Map<string, { amount: number; count: number }>()
+  for (const e of expenses) {
+    const key = expenseDayISO(e)
+    const cur = byDay.get(key) ?? { amount: 0, count: 0 }
+    byDay.set(key, { amount: cur.amount + e.amount, count: cur.count + 1 })
+  }
+
+  const keys = [...byDay.keys()].sort() // ISO strings sort chronologically
+  const max = Math.max(1, ...keys.map((k) => byDay.get(k)!.amount))
+
+  return keys.map((k) => {
+    const { amount, count } = byDay.get(k)!
+    const d = parseISODate(k)
+    return {
+      dateISO: k,
+      label: shortLabelFromISO(k),
+      weekday: d ? d.toLocaleDateString('en-IN', { weekday: 'short' }) : '',
+      amount,
+      amountStr: fmt(amount),
+      count,
+      heightPct: amount / max,
+    }
+  })
 }

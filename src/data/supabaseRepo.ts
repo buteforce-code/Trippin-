@@ -28,11 +28,12 @@ import type {
   TripInvite,
   TripListItem,
   TripSnapshot,
+  UpdateExpenseInput,
   UploadMediaInput,
 } from './types'
 import type { TripRepository } from './repository'
 import { CATS } from '../lib/catalog'
-import { formatRelativeTime, shortDateLabel } from '../lib/time'
+import { formatRelativeTime, isoDate, shortLabelFromISO } from '../lib/time'
 import {
   classifyQuality,
   detectDevice,
@@ -268,6 +269,7 @@ export class SupabaseTripRepository implements TripRepository {
         cat: e.category as CategoryKey,
         payer: e.paid_by ?? '',
         date: e.date_label ?? '',
+        spentOn: e.spent_on,
         amount: e.amount,
         createdAt: e.created_at,
       })),
@@ -354,10 +356,11 @@ export class SupabaseTripRepository implements TripRepository {
 
   // ── Per-trip writes ──────────────────────────────────────────────────────
 
-  async addExpense(tripId: string, { amount, title, cat }: NewExpenseInput): Promise<void> {
+  async addExpense(tripId: string, { amount, title, cat, spentOn }: NewExpenseInput): Promise<void> {
     if (!amount) return
     const ctx = this.ctx(tripId)
     const finalTitle = title || `${CATS[cat].label} expense`
+    const day = spentOn || isoDate()
 
     const { error: expErr } = await this.client.from('expenses').insert({
       trip_id: ctx.tripId,
@@ -365,8 +368,8 @@ export class SupabaseTripRepository implements TripRepository {
       category: cat,
       amount,
       paid_by: ctx.actorName,
-      date_label: shortDateLabel(),
-      spent_on: new Date().toISOString().slice(0, 10),
+      date_label: shortLabelFromISO(day),
+      spent_on: day,
       created_by: ctx.userId,
     })
     if (expErr) throw expErr
@@ -374,13 +377,52 @@ export class SupabaseTripRepository implements TripRepository {
     await this.log(ctx, 'expense', `Added ${finalTitle} · ₹${amount.toLocaleString('en-IN')}`)
   }
 
+  async updateExpense(tripId: string, { id, amount, title, cat, spentOn }: UpdateExpenseInput): Promise<void> {
+    if (!amount) return
+    const ctx = this.ctx(tripId)
+    const finalTitle = title || `${CATS[cat].label} expense`
+
+    const patch: DB['public']['Tables']['expenses']['Update'] = {
+      title: finalTitle,
+      category: cat,
+      amount,
+    }
+    if (spentOn) {
+      patch.spent_on = spentOn
+      patch.date_label = shortLabelFromISO(spentOn)
+    }
+
+    const { error } = await this.client
+      .from('expenses')
+      .update(patch)
+      .eq('id', id)
+      .eq('trip_id', ctx.tripId)
+    if (error) throw error
+
+    await this.log(ctx, 'edit', `Edited ${finalTitle} · ₹${amount.toLocaleString('en-IN')}`)
+  }
+
+  async deleteExpense(tripId: string, id: string, title: string, amount: number): Promise<void> {
+    const ctx = this.ctx(tripId)
+    const { error } = await this.client
+      .from('expenses')
+      .delete()
+      .eq('id', id)
+      .eq('trip_id', ctx.tripId)
+    if (error) throw error
+
+    await this.log(ctx, 'edit', `Removed ${title} · ₹${amount.toLocaleString('en-IN')}`)
+  }
+
   async recordPayment(tripId: string, memberIndex: number, amount?: number): Promise<void> {
     const ctx = this.ctx(tripId)
     const member = ctx.members[memberIndex]
     if (!member) return
-    const owed = ctx.perHeadFee - member.paid
-    if (owed <= 0) return
-    const pay = amount == null ? owed : Math.min(amount, owed)
+    const owed = Math.max(0, ctx.perHeadFee - member.paid)
+    // amount omitted → settle the remaining balance; a value → record exactly that
+    // (may exceed `owed` so members can top the pool up with extra money).
+    const pay = amount == null ? owed : Math.max(0, Math.round(amount))
+    if (pay <= 0) return
 
     const { error: contribErr } = await this.client.from('contributions').insert({
       trip_id: ctx.tripId,
@@ -390,7 +432,14 @@ export class SupabaseTripRepository implements TripRepository {
     })
     if (contribErr) throw contribErr
 
-    await this.log(ctx, 'payment', `Recorded ${member.name}'s payment · ₹${pay.toLocaleString('en-IN')}`)
+    const money = `₹${pay.toLocaleString('en-IN')}`
+    const detail =
+      owed <= 0
+        ? `Added ${member.name}'s extra ${money} into the pool`
+        : pay > owed
+          ? `Recorded ${member.name}'s payment · ${money} (incl. extra)`
+          : `Recorded ${member.name}'s payment · ${money}`
+    await this.log(ctx, 'payment', detail)
   }
 
   async uploadMedia(tripId: string, { files, stopKey }: UploadMediaInput): Promise<void> {

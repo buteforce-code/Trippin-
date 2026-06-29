@@ -20,6 +20,7 @@ import type {
   TripInvite,
   TripListItem,
   TripSnapshot,
+  UpdateExpenseInput,
   UploadMediaInput,
 } from '../data/types'
 import { tripRepository } from '../data'
@@ -94,6 +95,26 @@ export function useAddExpense() {
   return useMutation({
     mutationFn: (input: NewExpenseInput) =>
       tripRepository.addExpense(currentTripId as string, input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: tripKeys.snapshot(currentTripId) }),
+  })
+}
+
+export function useUpdateExpense() {
+  const qc = useQueryClient()
+  const { currentTripId } = useTrip()
+  return useMutation({
+    mutationFn: (input: UpdateExpenseInput) =>
+      tripRepository.updateExpense(currentTripId as string, input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: tripKeys.snapshot(currentTripId) }),
+  })
+}
+
+export function useDeleteExpense() {
+  const qc = useQueryClient()
+  const { currentTripId } = useTrip()
+  return useMutation({
+    mutationFn: ({ id, title, amount }: { id: string; title: string; amount: number }) =>
+      tripRepository.deleteExpense(currentTripId as string, id, title, amount),
     onSuccess: () => qc.invalidateQueries({ queryKey: tripKeys.snapshot(currentTripId) }),
   })
 }

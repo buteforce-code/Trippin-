@@ -8,11 +8,12 @@ import { BottomNav } from './BottomNav'
 import { AddExpenseSheet } from '../sheets/AddExpenseSheet'
 import { ActivityLogSheet } from '../sheets/ActivityLogSheet'
 import { RecordPaymentSheet } from '../sheets/RecordPaymentSheet'
+import { EditExpenseSheet } from '../sheets/EditExpenseSheet'
 import styles from './MobileFrame.module.css'
 
 export function MobileFrame() {
   const { theme } = useTheme()
-  const { addSheetOpen, logSheetOpen, recordTarget } = useUI()
+  const { addSheetOpen, logSheetOpen, recordTarget, editTarget } = useUI()
   const { canEditMoney } = useTrip()
   useTripRealtime()
 
@@ -36,6 +37,7 @@ export function MobileFrame() {
         {addSheetOpen && canEditMoney && <AddExpenseSheet />}
         {logSheetOpen && <ActivityLogSheet />}
         {recordTarget && canEditMoney && <RecordPaymentSheet target={recordTarget} />}
+        {editTarget && canEditMoney && <EditExpenseSheet expense={editTarget} />}
 
         <BottomNav />
       </div>

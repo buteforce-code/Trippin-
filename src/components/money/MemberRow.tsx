@@ -19,26 +19,30 @@ interface MemberView {
   barW: string
   barColor: string
   opacity: number
-  canRecord: boolean
+  full: boolean
+  /** Label for the action button — "+ Record" while owing, "+ Extra" once fully paid. */
+  recordLabel: string
 }
 
 function buildView(m: Member, fee: number): MemberView {
   const full = m.paid >= fee
   const partial = m.paid > 0 && m.paid < fee
   const splitTxt = `${m.splits} split${m.splits > 1 ? 's' : ''}`
+  const feeStr = `₹${fee.toLocaleString('en-IN')}`
   return {
     opacity: full ? 1 : partial ? 0.78 : 0.4,
     sub: full
-      ? `Paid ₹5,000 · ${splitTxt}`
+      ? `Paid ₹${m.paid.toLocaleString('en-IN')} · ${splitTxt}`
       : partial
-        ? `₹${m.paid.toLocaleString('en-IN')} of ₹5,000 · ${splitTxt}`
+        ? `₹${m.paid.toLocaleString('en-IN')} of ${feeStr} · ${splitTxt}`
         : 'Not paid yet',
     status: full ? 'Paid' : partial ? 'Partial' : 'Pending',
     badgeBg: full ? '#D6F2E3' : partial ? '#FFF1CC' : '#FFE3DC',
     badgeColor: full ? '#1f9b62' : partial ? '#B8860B' : '#e0573f',
     barW: Math.round(Math.min(m.paid / fee, 1) * 100) + '%',
     barColor: full ? 'var(--green)' : '#F2A93B',
-    canRecord: !full,
+    full,
+    recordLabel: full ? '+ Extra' : '+ Record',
   }
 }
 
@@ -60,15 +64,15 @@ export function MemberRow({ member, perHeadFee, onRecord, canRecord = true }: Me
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 7, flex: 'none' }}>
         <span style={{ fontSize: 10.5, fontWeight: 800, padding: '5px 10px', borderRadius: 20, background: v.badgeBg, color: v.badgeColor, whiteSpace: 'nowrap' }}>{v.status}</span>
-        {v.canRecord && canRecord && (
+        {canRecord && (
           <button
             type="button"
             onClick={onRecord}
-            aria-label={`Record payment for ${member.name}`}
+            aria-label={`${v.full ? 'Add extra contribution for' : 'Record payment for'} ${member.name}`}
             className={`pressable ${focus.ring}`}
-            style={{ border: 'none', cursor: 'pointer', fontWeight: 800, fontSize: 10.5, padding: '5px 10px', borderRadius: 12, background: 'var(--accent)', color: '#fff', whiteSpace: 'nowrap' }}
+            style={{ border: 'none', cursor: 'pointer', fontWeight: 800, fontSize: 10.5, padding: '5px 10px', borderRadius: 12, background: v.full ? 'var(--tint)' : 'var(--accent)', color: v.full ? 'var(--primary-d)' : '#fff', whiteSpace: 'nowrap' }}
           >
-            + Record
+            {v.recordLabel}
           </button>
         )}
       </div>

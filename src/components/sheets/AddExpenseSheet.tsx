@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { useAddExpense } from '../../hooks/queries'
 import { useUI } from '../../providers/UIProvider'
 import { CATS, CATEGORY_ORDER } from '../../lib/catalog'
+import { isoDate } from '../../lib/time'
 import type { CategoryKey } from '../../data/types'
 import { SheetShell } from './SheetShell'
+import { DateField } from './DateField'
 import { MUTED_TEXT } from '../ui/a11y'
 import focus from '../ui/focus.module.css'
 
@@ -24,6 +26,7 @@ export function AddExpenseSheet() {
   const [amount, setAmount] = useState('')
   const [title, setTitle] = useState('')
   const [cat, setCat] = useState<CategoryKey>('food')
+  const [spentOn, setSpentOn] = useState(isoDate())
 
   const handleSave = async () => {
     const parsed = parseInt(amount.replace(/[^\d]/g, ''), 10)
@@ -31,7 +34,7 @@ export function AddExpenseSheet() {
       closeAddSheet()
       return
     }
-    await addExpense.mutateAsync({ amount: parsed, title, cat })
+    await addExpense.mutateAsync({ amount: parsed, title, cat, spentOn })
     closeAddSheet()
     navigate('/money?tab=out')
   }
@@ -83,6 +86,8 @@ export function AddExpenseSheet() {
         className={focus.ring}
         style={{ width: '100%', border: '1.5px solid #e3efec', background: 'var(--bg)', borderRadius: 14, padding: '13px 15px', fontSize: 14, fontWeight: 600, color: 'var(--ink)', marginBottom: 18, boxSizing: 'border-box' }}
       />
+
+      <DateField value={spentOn} onChange={setSpentOn} />
 
       <button
         type="button"
